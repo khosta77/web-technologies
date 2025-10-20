@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Settings: Dr. Pepper - AskPupkin{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <h1>Settings: Dr. Pepper</h1>
+    
+    <form method="post" class="settings-form" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="login">Login</label>
+            <input type="text" id="login" name="login" value="dr_pepper" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" value="dr.pepper@mail.ru" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="nickname">NickName</label>
+            <input type="text" id="nickname" name="nickname" value="Dr. Perpper" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="avatar">Upload avatar</label>
+            <div class="avatar-upload">
+                <div class="avatar-preview">
+                    <img src="{% static 'img/avatar.jpg' %}" alt="Current avatar">
+                </div>
+                <div class="file-input-wrapper">
+                    <input type="file" id="avatar" name="avatar" accept="image/*">
+                    <label for="avatar" class="file-input-label">choose</label>
+                    <span class="file-path">c:\avatar.jpg</span>
+                </div>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+</div>
+{% endblock %}
