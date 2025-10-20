@@ -1,0 +1,23 @@
+# Системные файлы
+.DS_Store
+
+# Выход программы
+*.out
+*.csv
+
+# Файлы CMAKE
+build/*
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Python
+*.ipynb_checkpoints
+*__pycache__/
+venv/
+
+#protobuf
+*.pb.*
+
+json/
