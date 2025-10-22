@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Registration - AskPupkin{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <h1>Registration</h1>
+    
+    <div class="error-messages">
+        <div class="alert alert-error">
+            Sorry, this email address allready registred!
+        </div>
+    </div>
+    
+    <form method="post" class="auth-form" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="login">Login</label>
+            <input type="text" id="login" name="login" value="dr_pepper" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" value="dr.pepper@mail.ru" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="nickname">NickName</label>
+            <input type="text" id="nickname" name="nickname" value="Dr. Pepper" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="repeat_password">Repeat password</label>
+            <input type="password" id="repeat_password" name="repeat_password" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="avatar">Upload avatar</label>
+            <div class="file-input-wrapper">
+                <input type="file" id="avatar" name="avatar" accept="image/*">
+                <label for="avatar" class="file-input-label">choose</label>
+                <span class="file-path">c:\avatar.jpg</span>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Register!</button>
+        
+        <div class="auth-links">
+            <a href="{% url 'login' %}">log in</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

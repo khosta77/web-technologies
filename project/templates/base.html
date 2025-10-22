@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AskPupkin{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
+    <link rel="stylesheet" href="{% static 'css/pages.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="{% url 'index' %}">AskPupkin</a>
+                </div>
+                
+                <div class="search">
+                    <input type="text" placeholder="Search" class="search-input">
+                    <button class="search-btn">🔍</button>
+                </div>
+                
+                <div class="ask-btn">
+                    <a href="{% url 'ask' %}" class="btn btn-primary">ASK!</a>
+                </div>
+                
+                <div class="user-block">
+                    <div class="auth-links">
+                        <a href="{% url 'login' %}">log in</a>
+                        <a href="{% url 'signup' %}">register</a>
+                    </div>
+                    
+                    <div class="user-info" style="display: none;">
+                        <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="user-avatar">
+                        <span class="user-name">Dr. Pepper</span>
+                        <div class="user-menu">
+                            <a href="{% url 'settings' %}">settings</a>
+                            <a href="{% url 'index' %}">log out</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="content-wrapper">
+                <div class="left-column">
+                    {% block content %}
+                    {% endblock %}
+                </div>
+                
+                <aside class="right-column">
+                    <div class="sidebar-block">
+                        <h3>Popular Tags</h3>
+                        <div class="tags-list">
+                            <a href="{% url 'tags' %}" class="tag">perl</a>
+                            <a href="{% url 'tags' %}" class="tag tag-red">python</a>
+                            <a href="{% url 'tags' %}" class="tag">TechnoPark</a>
+                            <a href="{% url 'tags' %}" class="tag tag-red">MySQL</a>
+                            <a href="{% url 'tags' %}" class="tag tag-green">django</a>
+                            <a href="{% url 'tags' %}" class="tag">Mail.Ru</a>
+                            <a href="{% url 'tags' %}" class="tag">Voloshin</a>
+                            <a href="{% url 'tags' %}" class="tag tag-orange">Firefox</a>
+                        </div>
+                    </div>
+                    
+                    <div class="sidebar-block">
+                        <h3>Best Members</h3>
+                        <div class="members-list">
+                            <a href="{% url 'index' %}">Mr. Freeman</a>
+                            <a href="{% url 'index' %}">Dr. House</a>
+                            <a href="{% url 'index' %}">Bender</a>
+                            <a href="{% url 'index' %}">Queen Victoria</a>
+                            <a href="{% url 'index' %}">V. Pupkin</a>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2025 AskPupkin. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
