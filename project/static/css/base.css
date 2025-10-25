@@ -20,44 +20,48 @@ body {
 
 /* Адаптивность */
 @media (max-width: 768px) {
+    .container {
+        padding: 0 15px;
+    }
+    
     .content-wrapper {
         flex-direction: column;
+        gap: 20px;
     }
     
-    .header-content {
-        flex-wrap: wrap;
-        gap: 10px;
+    .right-column {
+        order: -1;
     }
     
-    .search {
-        order: 3;
-        width: 100%;
-        max-width: none;
-    }
-    
+    /* Правила для шапки перенесены в layout.css */
     .question-item {
         flex-direction: column;
-        text-align: center;
+        text-align: left;
+        padding: 15px;
     }
     
     .question-voting {
         flex-direction: row;
-        justify-content: center;
+        justify-content: flex-start;
+        gap: 15px;
+        margin-bottom: 15px;
     }
     
     .question-main {
         flex-direction: column;
-        text-align: center;
+        text-align: left;
     }
     
     .answer-item {
         flex-direction: column;
-        text-align: center;
+        text-align: left;
     }
     
     .answer-voting {
         flex-direction: row;
-        justify-content: center;
+        justify-content: flex-start;
+        gap: 15px;
+        margin-bottom: 15px;
     }
     
     .pagination {
@@ -74,21 +78,23 @@ body {
         padding: 10px 0;
     }
     
-    .header-content {
-        gap: 10px;
-    }
-    
-    .logo a {
-        font-size: 20px;
-    }
-    
-    .btn {
-        padding: 6px 12px;
-        font-size: 12px;
-    }
-    
+    /* Правила для шапки перенесены в layout.css */
     .question-item {
-        padding: 15px;
+        padding: 10px;
+    }
+    
+    .question-voting {
+        justify-content: center;
+    }
+    
+    .question-avatar {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .answer-avatar {
+        width: 40px;
+        height: 40px;
     }
     
     .sidebar-block {

@@ -15,22 +15,29 @@
         <div class="container">
             <div class="header-content">
                 <div class="logo">
-                    <a href="{% url 'index' %}">AskPupkin</a>
+                    <a href="{% url 'index' %}" class="logo-link">
+                        <img src="{% static 'img/logo.png' %}" alt="AskPupkin" class="logo-img">
+                        <span class="logo-text">AskPupkin</span>
+                    </a>
                 </div>
                 
-                <div class="search">
-                    <input type="text" placeholder="Search" class="search-input">
-                    <button class="search-btn">🔍</button>
-                </div>
-                
-                <div class="ask-btn">
-                    <a href="{% url 'ask' %}" class="btn btn-primary">ASK!</a>
+                <div class="search-field">
+                    <div class="search-input-container">
+                        <img src="{% static 'img/search.jpg' %}" alt="Search" class="search-icon">
+                        <input type="text" placeholder="Поиск..." class="search-input-field" id="searchInputField">
+                    </div>
                 </div>
                 
                 <div class="user-block">
+                    <img src="{% static 'img/search.jpg' %}" alt="Search" class="search-toggle-icon">
+                    
                     <div class="auth-links">
-                        <a href="{% url 'login' %}">log in</a>
-                        <a href="{% url 'signup' %}">register</a>
+                        {% block login_button %}
+                        <a href="{% url 'login' %}" class="btn btn-outline">Войти</a>
+                        {% endblock %}
+                        {% block signup_button %}
+                        <a href="{% url 'signup' %}" class="btn btn-primary">Регистрация</a>
+                        {% endblock %}
                     </div>
                     
                     <div class="user-info" style="display: none;">
@@ -42,6 +49,17 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Всплывающий виджет поиска -->
+        <div class="search-widget" id="searchWidget">
+            <div class="search-widget-content">
+                <div class="search-input-container">
+                    <img src="{% static 'img/search.jpg' %}" alt="Search" class="search-widget-icon">
+                    <input type="text" placeholder="Поиск..." class="search-input" id="searchInput">
+                </div>
+                <button class="search-close-btn" id="searchClose">×</button>
             </div>
         </div>
     </header>
@@ -60,5 +78,7 @@
             <p>&copy; 2025 AskPupkin. All rights reserved.</p>
         </div>
     </footer>
+    
+    <script src="{% static 'js/search.js' %}"></script>
 </body>
 </html>

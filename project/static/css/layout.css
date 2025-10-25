@@ -1,63 +1,259 @@
-/* Шапка */
+/* Компактная шапка */
 .site-header {
-    background-color: #fff;
-    border-bottom: 1px solid #e9ecef;
-    padding: 15px 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #d6d9dc;
+    padding: 0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    position: relative;
 }
 
 .header-content {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    height: 60px;
     gap: 20px;
 }
 
-.logo a {
-    font-size: 24px;
+/* Логотип */
+.logo {
+    flex-shrink: 0;
+}
+
+.logo-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.logo-img {
+    height: 20px !important;
+    width: auto;
+    max-width: 60px;
+}
+
+.logo-text {
+    font-size: 22px;
     font-weight: bold;
     color: #007bff;
     text-decoration: none;
 }
 
-.search {
+/* Поле поиска в шапке */
+.search-field {
     flex: 1;
-    max-width: 400px;
+    max-width: 500px;
+    margin: 0 20px;
+}
+
+.search-input-container {
+    position: relative;
     display: flex;
+    align-items: center;
 }
 
-.search-input {
-    flex: 1;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px 0 0 4px;
+.search-field .search-icon {
+    position: absolute;
+    left: 12px;
+    color: #525960;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.search-input-field {
+    width: 100%;
+    padding: 10px 12px 10px 40px; /* Убрал правый отступ, оставил только левый для иконки */
+    border: 1px solid #d6d9dc;
+    border-radius: 3px;
     font-size: 14px;
+    background-color: white;
+    transition: all 0.2s;
 }
 
-.search-btn {
-    padding: 8px 12px;
-    background-color: #007bff;
-    color: white;
+
+.search-input-field:focus {
+    outline: none;
+    border-color: #0074cc;
+    box-shadow: 0 0 0 2px rgba(0,116,204,0.1);
+}
+
+.search-input-field::placeholder {
+    color: #6c757d;
+}
+
+/* Иконки поиска (изображения) */
+.search-field .search-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
+
+
+
+.search-widget-icon {
+    position: absolute;
+    left: 12px;
+    color: #525960;
+    pointer-events: none;
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
+
+/* Кнопка поиска */
+.search-toggle-icon {
+    background: none;
     border: none;
-    border-radius: 0 4px 4px 0;
     cursor: pointer;
-    font-size: 14px;
+    padding: 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    width: 36px;
+    height: 36px;
+}
+
+.search-toggle-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Скрыть кнопку поиска на десктопе */
+@media (min-width: 769px) {
+    .search-toggle-icon {
+        display: none;
+    }
+}
+
+.search-toggle-icon:hover {
+    opacity: 1;
+    background-color: rgba(241, 242, 243, 0.5);
 }
 
 /* Пользовательский блок */
 .user-block {
     display: flex;
     align-items: center;
-    gap: 15px;
+    flex-shrink: 0;
+    height: 50%;
+}
+
+.auth-links {
+    display: flex;
+    gap: 12px;
 }
 
 .auth-links a {
-    color: #007bff;
     text-decoration: none;
-    margin-left: 10px;
+    font-size: 14px !important;
+    padding: 8px 16px !important;
+    border-radius: 6px;
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-weight: 500;
+    display: flex;
+    line-height: 1;
+    align-items: center;
+    height: 35px; /* Добавить фиксированную высоту */
+    box-sizing: border-box; /* Учесть padding в общей высоте */
+    margin-top: -12px; /* Смещаем кнопки вверх для выравнивания с логотипом */
 }
 
-.auth-links a:hover {
-    text-decoration: underline;
+.btn-outline {
+    background-color: transparent !important;
+    color: #0074cc !important;
+    border: 1px solid #0074cc !important;
+}
+
+.btn-outline:hover {
+    background-color: #f1f2f3 !important;
+    border-color: #0074cc !important;
+    color: #0074cc !important;
+}
+
+.btn-primary {
+    background-color: #0074cc !important;
+    color: white !important;
+    border: 1px solid #0074cc !important;
+}
+
+.btn-primary:hover {
+    background-color: #0074cc !important;
+    opacity: 0.9;
+    color: white !important;
+}
+
+/* Всплывающий виджет поиска */
+.search-widget {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: white;
+    border-bottom: 1px solid #d6d9dc;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    z-index: 1000;
+    transform: translateY(-100%);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.search-widget.active {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+}
+
+.search-widget-content {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    gap: 12px;
+}
+
+.search-input-container {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+
+.search-input {
+    width: 100%;
+    padding: 10px 12px 10px 40px;
+    border: 1px solid #d6d9dc;
+    border-radius: 3px;
+    font-size: 16px;
+    background-color: white;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #0074cc;
+    box-shadow: 0 0 0 2px rgba(0,116,204,0.1);
+}
+
+.search-close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #525960;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 3px;
+    transition: all 0.2s;
+}
+
+.search-close-btn:hover {
+    background-color: #f1f2f3;
+    color: #0c0d0e;
 }
 
 .user-info {
@@ -160,3 +356,59 @@
     text-align: center;
     color: #6c757d;
 }
+
+/* Медиа-запросы для мобильных устройств */
+@media (max-width: 768px) {
+    .header-content {
+        height: 60px;
+        padding: 0 15px;
+        gap: 16px;
+    }
+    
+    .search-field {
+        display: none;
+    }
+    
+    
+    .logo-text {
+        display: none;
+    }
+    
+    .logo-img {
+        height: 18px;
+        align-items: baseline;
+    }
+    
+    .search-toggle-icon {
+        display: flex;
+        padding: 6px;
+        width: 32px;
+        height: 32px;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .search-toggle-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .auth-links {
+        gap: 6px;
+    }
+    
+    .auth-links a {
+        font-size: 12px;
+        padding: 6px 12px;
+        align-items: center;
+        height: 35px;
+        box-sizing: border-box;
+        margin-top: -12px;
+    }
+    
+    .search-widget-content {
+        padding: 10px 15px;
+    }
+}
+
