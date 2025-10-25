@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AskPupkin{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
+    <link rel="stylesheet" href="{% static 'css/pages.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="{% url 'index' %}">AskPupkin</a>
+                </div>
+                
+                <div class="search">
+                    <input type="text" placeholder="Search" class="search-input">
+                    <button class="search-btn">🔍</button>
+                </div>
+                
+                <div class="ask-btn">
+                    <a href="{% url 'ask' %}" class="btn btn-primary">ASK!</a>
+                </div>
+                
+                <div class="user-block">
+                    <div class="auth-links">
+                        <a href="{% url 'login' %}">log in</a>
+                        <a href="{% url 'signup' %}">register</a>
+                    </div>
+                    
+                    <div class="user-info" style="display: none;">
+                        <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="user-avatar">
+                        <span class="user-name">Dr. Pepper</span>
+                        <div class="user-menu">
+                            <a href="{% url 'settings' %}">settings</a>
+                            <a href="{% url 'index' %}">log out</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="auth-wrapper">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2025 AskPupkin. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

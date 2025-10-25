@@ -10,12 +10,13 @@ project/
 │   ├── urls.py
 │   └── wsgi.py
 ├── templates/           # Django шаблоны
-│   ├── base.html       # Базовый шаблон
+│   ├── base.html       # Базовый шаблон (с правой колонкой)
+│   ├── base_auth.html  # Базовый шаблон для авторизации (без правой колонки)
 │   ├── index.html      # Главная страница
 │   ├── question.html   # Страница вопроса
 │   ├── ask.html        # Форма добавления вопроса
-│   ├── login.html      # Форма авторизации
-│   ├── signup.html     # Форма регистрации
+│   ├── login.html      # Форма авторизации (наследует base_auth.html)
+│   ├── signup.html     # Форма регистрации (наследует base_auth.html)
 │   ├── settings.html   # Страница настроек
 │   └── tags.html       # Страница тегов
 ├── static/

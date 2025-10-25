@@ -249,6 +249,13 @@
     margin: 0 auto;
 }
 
+/* Специальные стили для страниц авторизации */
+.auth-wrapper {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px 0;
+}
+
 .auth-page h1 {
     margin-bottom: 20px;
     color: #333;
