@@ -520,3 +520,137 @@
         line-height: 1.1;
     }
 }
+
+/* Адаптивные стили для карточек вопросов */
+@media (max-width: 768px) {
+    .question-item {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 15px;
+        padding: 15px;
+        align-items: start;
+    }
+    
+    /* Левая колонка: аватар + голосование + ответы */
+    .question-left-column {
+        grid-column: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        min-width: 80px;
+    }
+    
+    .question-avatar {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .question-voting {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .question-meta {
+        margin: 0;
+    }
+    
+    /* Правая колонка: название + теги + текст */
+    .question-right-column {
+        grid-column: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .question-title {
+        margin: 0;
+    }
+    
+    .question-title a {
+        font-size: 16px;
+    }
+    
+    .question-tags {
+        margin: 0;
+    }
+    
+    .question-text {
+        font-size: 14px;
+        margin: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .question-item {
+        grid-template-columns: auto 1fr;
+        gap: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+    }
+    
+    .question-left-column {
+        gap: 8px;
+        min-width: 70px;
+    }
+    
+    .question-avatar {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .question-voting {
+        gap: 4px;
+        flex-direction: row;
+    }
+    
+    .question-right-column {
+        gap: 6px;
+    }
+    
+    .question-title a {
+        font-size: 15px;
+    }
+    
+    .question-text {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 370px) {
+    .question-item {
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+        padding: 10px;
+        margin-bottom: 8px;
+    }
+    
+    .question-left-column {
+        gap: 6px;
+        min-width: 60px;
+    }
+    
+    .question-avatar {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .question-voting {
+        gap: 3px;
+        flex-direction: row;
+    }
+    
+    .question-right-column {
+        gap: 4px;
+    }
+    
+    .question-title a {
+        font-size: 14px;
+    }
+    
+    .question-text {
+        font-size: 12px;
+    }
+}

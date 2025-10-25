@@ -12,86 +12,98 @@
     
     <div class="questions-list">
         <div class="question-item">
-            <div class="question-voting">
+            <!-- Левая колонка: аватар + голосование + ответы -->
+            <div class="question-left-column">
                 <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="question-avatar">
-                <div class="voting-controls">
-                    <button class="vote-btn vote-up">▲</button>
-                    <span class="vote-count">5</span>
-                    <button class="vote-btn vote-down">▼</button>
+                <div class="question-voting">
+                    <div class="voting-controls">
+                        <button class="vote-btn vote-down">-</button>
+                        <span class="vote-count">5</span>
+                        <button class="vote-btn vote-up">+</button>
+                    </div>
+                </div>
+                <div class="question-meta">
+                    <a href="{% url 'question' question_id=123 %}#answers" class="answers-count">answer (3)</a>
                 </div>
             </div>
             
-            <div class="question-content">
+            <!-- Правая колонка: название + теги + текст -->
+            <div class="question-right-column">
                 <h2 class="question-title">
                     <a href="{% url 'question' question_id=123 %}">How to build a moon park ?</a>
                 </h2>
+                <div class="question-tags">
+                    <span>Tags:</span>
+                    <a href="{% url 'tags' %}" class="tag">black-jack</a>
+                    <a href="{% url 'tags' %}" class="tag">bender</a>
+                </div>
                 <p class="question-text">
                     Guys, i have trouble with a moon park. Can't find th black-jack...
                 </p>
-                <div class="question-meta">
-                    <a href="{% url 'question' question_id=123 %}#answers" class="answers-count">answer (3)</a>
-                    <div class="question-tags">
-                        <span>Tags:</span>
-                        <a href="{% url 'tags' %}" class="tag">black-jack</a>
-                        <a href="{% url 'tags' %}" class="tag">bender</a>
-                    </div>
-                </div>
             </div>
         </div>
         
         <div class="question-item">
-            <div class="question-voting">
+            <!-- Левая колонка: аватар + голосование + ответы -->
+            <div class="question-left-column">
                 <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="question-avatar">
-                <div class="voting-controls">
-                    <button class="vote-btn vote-up">▲</button>
-                    <span class="vote-count">3</span>
-                    <button class="vote-btn vote-down">▼</button>
+                <div class="question-voting">
+                    <div class="voting-controls">
+                        <button class="vote-btn vote-down">-</button>
+                        <span class="vote-count">3</span>
+                        <button class="vote-btn vote-up">+</button>
+                    </div>
+                </div>
+                <div class="question-meta">
+                    <a href="{% url 'question' question_id=124 %}#answers" class="answers-count">answer (7)</a>
                 </div>
             </div>
             
-            <div class="question-content">
+            <!-- Правая колонка: название + теги + текст -->
+            <div class="question-right-column">
                 <h2 class="question-title">
                     <a href="{% url 'question' question_id=124 %}">How to configure Django settings?</a>
                 </h2>
+                <div class="question-tags">
+                    <span>Tags:</span>
+                    <a href="{% url 'tags' %}" class="tag tag-green">django</a>
+                    <a href="{% url 'tags' %}" class="tag tag-red">python</a>
+                </div>
                 <p class="question-text">
                     I need help with Django configuration. What are the best practices?
                 </p>
-                <div class="question-meta">
-                    <a href="{% url 'question' question_id=124 %}#answers" class="answers-count">answer (7)</a>
-                    <div class="question-tags">
-                        <span>Tags:</span>
-                        <a href="{% url 'tags' %}" class="tag tag-green">django</a>
-                        <a href="{% url 'tags' %}" class="tag tag-red">python</a>
-                    </div>
-                </div>
             </div>
         </div>
         
         <div class="question-item">
-            <div class="question-voting">
+            <!-- Левая колонка: аватар + голосование + ответы -->
+            <div class="question-left-column">
                 <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="question-avatar">
-                <div class="voting-controls">
-                    <button class="vote-btn vote-up">▲</button>
-                    <span class="vote-count">8</span>
-                    <button class="vote-btn vote-down">▼</button>
+                <div class="question-voting">
+                    <div class="voting-controls">
+                        <button class="vote-btn vote-down">-</button>
+                        <span class="vote-count">8</span>
+                        <button class="vote-btn vote-up">+</button>
+                    </div>
+                </div>
+                <div class="question-meta">
+                    <a href="{% url 'question' question_id=125 %}#answers" class="answers-count">answer (12)</a>
                 </div>
             </div>
             
-            <div class="question-content">
+            <!-- Правая колонка: название + теги + текст -->
+            <div class="question-right-column">
                 <h2 class="question-title">
                     <a href="{% url 'question' question_id=125 %}">Best practices for MySQL optimization</a>
                 </h2>
+                <div class="question-tags">
+                    <span>Tags:</span>
+                    <a href="{% url 'tags' %}" class="tag tag-red">MySQL</a>
+                    <a href="{% url 'tags' %}" class="tag">database</a>
+                </div>
                 <p class="question-text">
                     Looking for tips on how to optimize MySQL database performance...
                 </p>
-                <div class="question-meta">
-                    <a href="{% url 'question' question_id=125 %}#answers" class="answers-count">answer (12)</a>
-                    <div class="question-tags">
-                        <span>Tags:</span>
-                        <a href="{% url 'tags' %}" class="tag tag-red">MySQL</a>
-                        <a href="{% url 'tags' %}" class="tag">database</a>
-                    </div>
-                </div>
             </div>
         </div>
     </div>

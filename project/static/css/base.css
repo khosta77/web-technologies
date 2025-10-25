@@ -42,8 +42,8 @@ body {
     
     .question-voting {
         flex-direction: row;
-        justify-content: flex-start;
-        gap: 15px;
+        justify-content: center;
+        gap: 5px;
         margin-bottom: 15px;
     }
     
@@ -84,7 +84,9 @@ body {
     }
     
     .question-voting {
+        flex-direction: row;
         justify-content: center;
+        gap: 3px;
     }
     
     .question-avatar {
