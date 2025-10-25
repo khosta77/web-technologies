@@ -19,17 +19,25 @@
     color: #333;
     font-size: 24px;
     margin: 0;
+    flex: 1; /* Заголовок занимает доступное пространство */
+    min-width: 0; /* Позволяем заголовку сжиматься */
 }
 
 .ask-question-btn {
     background-color: #0074cc;
     color: white;
-    padding: 10px 16px;
+    padding: 10px 12px;
     border-radius: 3px;
     text-decoration: none;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px; /* Фиксированная высота для выравнивания */
+    box-sizing: border-box;
+    flex-shrink: 0; /* Кнопка не сжимается */
 }
 
 .ask-question-btn:hover {
@@ -415,21 +423,37 @@
     background-color: #5a6268;
 }
 
-/* Медиа-запросы для адаптивности страниц */
-@media (max-width: 768px) {
-    .questions-section,
-    .question-page,
-    .ask-page,
-    .settings-page {
-        padding: 15px;
+/* Промежуточный размер для планшетов */
+@media (max-width: 992px) {
+    .questions-header h1 {
+        font-size: 20px; /* Уменьшаем размер шрифта */
+        line-height: 1.2;
     }
-    
-    .questions-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
+}
+
+/* Дополнительный медиа-запрос для средних экранов */
+@media (max-width: 850px) and (min-width: 769px) {
+    .questions-header h1 {
+        font-size: 18px; /* Еще больше уменьшаем для средних экранов */
+        line-height: 1.1;
     }
-    
+}
+
+/* Промежуточный медиа-запрос для сохранения горизонтального layout */
+@media (max-width: 768px) and (min-width: 601px) {    
+    .questions-header h1 {
+        font-size: 16px; /* Еще больше уменьшаем для средних экранов */
+        line-height: 1.1;
+    }
+}
+
+/* Промежуточный медиа-запрос для сохранения горизонтального layout */
+@media (max-width: 600px) and (min-width: 481px) {    
+    .questions-header h1 {
+        font-size: 14px; /* Еще больше уменьшаем для средних экранов */
+        line-height: 1.1;
+    }
+
     .hot-link {
         align-self: flex-end;
     }
@@ -456,19 +480,13 @@
     }
 }
 
-@media (max-width: 480px) {
-    .questions-section,
-    .question-page,
-    .ask-page,
-    .settings-page {
-        padding: 10px;
-        margin: 0;
-    }
-    
+/* Промежуточный медиа-запрос для сохранения горизонтального layout */
+@media (max-width: 480px) {    
     .questions-header h1 {
-        font-size: 20px;
+        font-size: 12px; /* Еще больше уменьшаем для средних экранов */
+        line-height: 1.1;
     }
-    
+        
     .question-title a {
         font-size: 16px;
     }
@@ -485,11 +503,6 @@
         font-size: 16px;
     }
     
-    .btn {
-        width: 100%;
-        padding: 12px;
-    }
-    
     .avatar-upload {
         flex-direction: column;
         align-items: flex-start;
@@ -498,5 +511,12 @@
     .file-input-wrapper {
         width: 100%;
         justify-content: space-between;
+    }
+}
+
+@media (max-width: 370px) {    
+    .questions-header h1 {
+        font-size: 10px;
+        line-height: 1.1;
     }
 }
