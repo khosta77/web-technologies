@@ -9,10 +9,8 @@
 <div class="auth-page">
     <h1>Log In</h1>
     
-    <div class="error-messages">
-        <div class="alert alert-error">
-            Sorry, wrong password!
-        </div>
+    <div class="error-messages" style="display: none;">
+        <!-- Ошибки будут добавляться динамически через JavaScript -->
     </div>
     
     <form method="post" class="auth-form">
@@ -27,11 +25,13 @@
             <input type="password" id="password" name="password" class="form-control" required>
         </div>
         
-        <button type="submit" class="btn btn-primary">Log in!</button>
-        
-        <div class="auth-links">
-            <a href="{% url 'signup' %}">create new account</a>
+        <div class="auth-button-row">
+            <button type="submit" class="btn btn-primary">Log in!</button>
+            <div class="auth-links">
+                <a href="{% url 'signup' %}">create new account</a>
+            </div>
         </div>
     </form>
 </div>
+<script src="{% static 'js/login-validation.js' %}"></script>
 {% endblock %}

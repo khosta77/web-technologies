@@ -5,11 +5,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
     const searchInputField = document.getElementById('searchInputField');
     
-    // Функция для выполнения поиска
     function performSearch(query) {
         if (query.trim()) {
             console.log('[Search.js]:', query);
-
         }
     }
     
@@ -28,7 +26,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Обработка изменения размера окна
     function handleResize() {
         const searchWidget = document.getElementById('searchWidget');
         const searchInputField = document.getElementById('searchInputField');
@@ -100,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    
     syncSearchFields();
     window.addEventListener('resize', handleResize);
 });
+
