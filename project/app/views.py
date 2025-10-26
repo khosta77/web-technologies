@@ -153,6 +153,27 @@ def settings(request):
     })
 
 
+def profile(request, user_id):
+    """Страница профиля пользователя"""
+    user = get_authenticated_user(request)
+    profile_user = user_repository.get_user_by_id(user_id)
+    
+    if not profile_user:
+        messages.error(request, 'Пользователь не найден')
+        return redirect('index')
+    
+    # Получаем вопросы и ответы пользователя
+    user_questions = user_repository.get_user_questions(user_id)
+    user_answers = user_repository.get_user_answers(user_id)
+    
+    return render(request, 'profile.html', {
+        'user': user,
+        'profile_user': profile_user,
+        'user_questions': user_questions,
+        'user_answers': user_answers,
+    })
+
+
 def logout(request):
     """Выход из системы"""
     request.session.flush()

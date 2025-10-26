@@ -72,4 +72,17 @@ class IUserRepository(ABC):
             list: Список ответов пользователя
         """
         pass
+    
+    @abstractmethod
+    def get_best_members(self, limit=5):
+        """
+        Получить лучших пользователей по рейтингу
+        
+        Args:
+            limit (int): Количество пользователей
+            
+        Returns:
+            list: Список пользователей
+        """
+        pass
 

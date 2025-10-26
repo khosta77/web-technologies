@@ -38,4 +38,10 @@ class UserMockRepository(IUserRepository):
     def get_all_users(self):
         """Получить всех пользователей (для тестирования)"""
         return MOCK_USERS.copy()
+    
+    def get_best_members(self, limit=5):
+        """Получить лучших пользователей по рейтингу"""
+        all_users = self.get_all_users()
+        sorted_users = sorted(all_users, key=lambda x: x.get('rating', 0), reverse=True)
+        return sorted_users[:limit]
 

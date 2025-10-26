@@ -395,14 +395,27 @@
     gap: 8px;
 }
 
-.members-list a {
+.member-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.member-rating {
+    color: #6c757d;
+    font-weight: 600;
+    font-size: 13px;
+    min-width: 30px;
+}
+
+.member-item a {
     color: #007bff;
     text-decoration: none;
     padding: 5px 0;
     font-size: 14px;
 }
 
-.members-list a:hover {
+.member-item a:hover {
     text-decoration: underline;
 }
 

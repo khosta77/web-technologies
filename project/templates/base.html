@@ -96,11 +96,12 @@
                     <div class="sidebar-block">
                         <h3>Best Members</h3>
                         <div class="members-list">
-                            <a href="{% url 'index' %}">Mr. Freeman</a>
-                            <a href="{% url 'index' %}">Dr. House</a>
-                            <a href="{% url 'index' %}">Bender</a>
-                            <a href="{% url 'index' %}">Queen Victoria</a>
-                            <a href="{% url 'index' %}">V. Pupkin</a>
+                            {% for member in best_members %}
+                            <div class="member-item">
+                                <span class="member-rating">{{ member.rating }}</span>
+                                <a href="{% url 'profile' user_id=member.id %}">{{ member.username }}</a>
+                            </div>
+                            {% endfor %}
                         </div>
                     </div>
                 </aside>

@@ -16,5 +16,8 @@ def user_context(request):
     if user_id:
         user = repo.get_user_by_id(user_id)
     
-    return {'user': user}
+    # Получаем лучших пользователей
+    best_members = repo.get_best_members(limit=5)
+    
+    return {'user': user, 'best_members': best_members}
 
