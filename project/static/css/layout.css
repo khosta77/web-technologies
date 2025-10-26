@@ -323,6 +323,27 @@
     font-size: 16px;
 }
 
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.sidebar-header h3 {
+    margin: 0;
+}
+
+.hot-questions-link {
+    color: #007bff;
+    text-decoration: underline;
+    transition: color 0.3s;
+}
+
+.hot-questions-link:hover {
+    color: #0056b3;
+}
+
 .tags-list {
     display: flex;
     flex-wrap: wrap;

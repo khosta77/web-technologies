@@ -70,16 +70,19 @@
                 
                 <aside class="right-column">
                     <div class="sidebar-block">
-                        <h3>Popular Tags</h3>
+                        <div class="sidebar-header">
+                            <h3>Popular Tags</h3>
+                            <h3><a href="{% url 'hot' %}" class="hot-questions-link">Hot Questions</a></h3>
+                        </div>
                         <div class="tags-list">
-                            <a href="{% url 'tags' %}" class="tag">perl</a>
-                            <a href="{% url 'tags' %}" class="tag tag-red">python</a>
-                            <a href="{% url 'tags' %}" class="tag">TechnoPark</a>
-                            <a href="{% url 'tags' %}" class="tag tag-red">MySQL</a>
-                            <a href="{% url 'tags' %}" class="tag tag-green">django</a>
-                            <a href="{% url 'tags' %}" class="tag">Mail.Ru</a>
-                            <a href="{% url 'tags' %}" class="tag">Voloshin</a>
-                            <a href="{% url 'tags' %}" class="tag tag-orange">Firefox</a>
+                            <a href="{% url 'tag' tag_name='python' %}" class="tag tag-red">python</a>
+                            <a href="{% url 'tag' tag_name='django' %}" class="tag tag-green">django</a>
+                            <a href="{% url 'tag' tag_name='javascript' %}" class="tag">javascript</a>
+                            <a href="{% url 'tag' tag_name='react' %}" class="tag">react</a>
+                            <a href="{% url 'tag' tag_name='docker' %}" class="tag">docker</a>
+                            <a href="{% url 'tag' tag_name='mysql' %}" class="tag tag-red">MySQL</a>
+                            <a href="{% url 'tag' tag_name='postgresql' %}" class="tag">postgresql</a>
+                            <a href="{% url 'tags' %}" class="tag tag-orange">View all tags</a>
                         </div>
                     </div>
                     
