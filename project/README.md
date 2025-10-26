@@ -74,6 +74,16 @@ project/
 
 ## Запуск Django сервера
 
+### С Poetry (рекомендуется)
+
+```bash
+cd project
+poetry install                    # Установка зависимостей
+poetry run python manage.py runserver 8000
+```
+
+### С venv
+
 ```bash
 cd project
 source venv/bin/activate
@@ -84,12 +94,30 @@ python manage.py runserver 8000
 
 ## Установка зависимостей
 
+### С Poetry
+
 ```bash
-cd project
+poetry install
+poetry run python manage.py migrate
+```
+
+### С venv
+
+```bash
 python3 -m venv venv
 source venv/bin/activate
-pip install django
+pip install -r requirements.txt
 python manage.py migrate
+```
+
+## Запуск тестов
+
+```bash
+# С Poetry
+poetry run pytest app/tests/ -v
+
+# С venv
+pytest app/tests/ -v
 ```
 
 ## Основные страницы
