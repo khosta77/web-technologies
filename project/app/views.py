@@ -1,69 +1,38 @@
 from django.shortcuts import render
 from .utils import paginate
+from .constants import QUESTIONS_PER_PAGE, ANSWERS_PER_PAGE
+from .mockRepositories import (
+    QuestionMockRepository,
+    AnswerMockRepository,
+    TagMockRepository
+)
+
+# Инициализация репозиториев
+question_repository = QuestionMockRepository()
+answer_repository = AnswerMockRepository()
+tag_repository = TagMockRepository()
 
 
 def index(request):
     """Главная страница - список новых вопросов"""
-    questions = []
-    for i in range(1, 31):
-        questions.append({
-            'id': i,
-            'title': f'How to build a moon park {i}?',
-            'text': f'Guys, i have trouble with a moon park {i}. Can\'t find th black-jack...',
-            'author': f'user{i % 10}',
-            'rating': i * 5,
-            'answers_count': i % 5,
-            'tags': ['python', 'django'] if i % 2 == 0 else ['javascript', 'react'],
-        })
-    
-    page = paginate(questions, request, per_page=5)
+    questions = question_repository.get_all_questions()
+    page = paginate(questions, request, per_page=QUESTIONS_PER_PAGE)
     return render(request, 'index.html', {'page': page})
 
 
 def hot(request):
     """Список популярных вопросов"""
-    questions = []
-    for i in range(1, 31):
-        questions.append({
-            'id': i,
-            'title': f'Hot Question #{i}: Advanced Django Patterns',
-            'text': f'This is a highly rated question about Django patterns {i}...',
-            'author': f'expert{i % 5}',
-            'rating': 1000 - i * 20,
-            'answers_count': i % 15,
-            'tags': ['django', 'python', 'best-practices'],
-        })
-    
-    # Сортируем по рейтингу (убывание)
-    questions.sort(key=lambda x: x['rating'], reverse=True)
-    
-    page = paginate(questions, request, per_page=5)
+    questions = question_repository.get_hot_questions()
+    page = paginate(questions, request, per_page=QUESTIONS_PER_PAGE)
     return render(request, 'index.html', {'page': page, 'is_hot': True})
 
 
 def question(request, question_id):
     """Страница одного вопроса"""
-    question_obj = {
-        'id': question_id,
-        'title': f'How to build a moon park?',
-        'text': 'Guys, i have trouble with a moon park. Can\'t find th black-jack...',
-        'author': 'user123',
-        'rating': 15,
-        'answers_count': 3,
-        'tags': ['black-jack', 'bender'],
-    }
+    question_obj = question_repository.get_question_by_id(question_id)
+    answers = answer_repository.get_answers_by_question_id(question_id)
     
-    answers = []
-    for i in range(1, 10):
-        answers.append({
-            'id': i,
-            'text': f'Answer {i}: This is a detailed answer to the question...',
-            'author': f'helper{i}',
-            'rating': 10 - i,
-            'is_correct': i == 2,  # Второй ответ - правильный
-        })
-    
-    page = paginate(answers, request, per_page=3)
+    page = paginate(answers, request, per_page=ANSWERS_PER_PAGE)
     return render(request, 'question.html', {
         'question': question_obj,
         'page': page,
@@ -72,28 +41,14 @@ def question(request, question_id):
 
 def tag(request, tag_name):
     """Список вопросов по тегу"""
-    questions = []
-    for i in range(1, 21):
-        questions.append({
-            'id': i,
-            'title': f'Question {i} about {tag_name}',
-            'text': f'This question is related to {tag_name}. Detailed explanation...',
-            'author': f'user{i % 10}',
-            'rating': i * 10,
-            'answers_count': i % 8,
-            'tags': [tag_name],
-        })
-    
-    page = paginate(questions, request, per_page=5)
+    questions = question_repository.get_questions_by_tag(tag_name)
+    page = paginate(questions, request, per_page=QUESTIONS_PER_PAGE)
     return render(request, 'index.html', {'page': page, 'tag_name': tag_name})
 
 
 def tags(request):
     """Страница списка тегов"""
-    tags_list = [
-        'python', 'django', 'javascript', 'react', 'mysql', 'postgresql',
-        'html', 'css', 'java', 'c++', 'web', 'programming'
-    ]
+    tags_list = tag_repository.get_all_tags()
     return render(request, 'tags.html', {'tags_list': tags_list})
 
 
