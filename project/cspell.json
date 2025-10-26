@@ -1,0 +1,27 @@
+{
+  "version": "0.2",
+  "language": "en,ru",
+  "words": [
+    "askpupkin",
+    "pyproject",
+    "Django",
+    "pytest",
+    "poethepoet",
+    "mock",
+    "repository",
+    "repositories",
+    "filename",
+    "packagetype",
+    "pycodestyle",
+    "poethepoet"
+  ],
+  "ignoreWords": [
+    "pyproject",
+    "venv",
+    "untyped",
+    "noqa",
+    "abcdef",
+    "ghijkl"
+  ]
+}
+

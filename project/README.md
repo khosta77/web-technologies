@@ -74,20 +74,12 @@ project/
 
 ## Запуск Django сервера
 
-### С Poetry (рекомендуется)
+### С Poetry
 
 ```bash
 cd project
 poetry install                    # Установка зависимостей
 poetry run python manage.py runserver 8000
-```
-
-### С venv
-
-```bash
-cd project
-source venv/bin/activate
-python manage.py runserver 8000
 ```
 
 * В браузере: `http://localhost:8000/`
@@ -101,24 +93,30 @@ poetry install
 poetry run python manage.py migrate
 ```
 
-### С venv
+## Инструменты качества кода
+
+Проект использует Poetry для управления зависимостями и Poe the Poet для запуска задач.
+
+### Установка зависимостей
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python manage.py migrate
+poetry install
 ```
 
-## Запуск тестов
+### Команды для проверок
 
 ```bash
-# С Poetry
-poetry run pytest app/tests/ -v
-
-# С venv
-pytest app/tests/ -v
+poetry run poe ci
 ```
+
+### Инструменты
+
+- **pytest** — тестирование
+- **ruff** — быстрый линтер и форматтер
+- **mypy** — проверка типов
+- **flake8** - проверки линтеров
+- **bandit** — анализ безопасности кода
+- **vulture** — поиск неиспользуемого кода
 
 ## Основные страницы
 

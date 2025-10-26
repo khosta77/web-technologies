@@ -1,22 +1,120 @@
-[tool.poetry]
+[project]
 name = "askpupkin"
 version = "0.1.0"
 description = "Stack Overflow-like Q&A platform"
-authors = ["Stepan Filimonov"]
+authors = [{name = "Stepan Filimonov"}]
 readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dynamic = [
+    "dependencies",
+    "optional-dependencies"
+]
+
+[tool.poetry]
 packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
-python = "^3.13"
+python = "~3.13"
 django = "5.2.7"
 pytest = "8.4.2"
 pytest-django = "4.11.1"
 
 [tool.poetry.group.dev.dependencies]
+mypy = "^1.15"
+pre-commit = "^4.2"
+ruff = "^0.14.2"
+flake8 = "^7.3.0"
+poethepoet = "^0.37.0"
+bandit = "^1.8.6"
+vulture = "^2.14"
+pytest = "^8.4.2"
+pytest-mock = "^3.15.0"
+syrupy = "^4.9.1"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.mypy]
+python_version = "3.13"
+files = ["app/**/*.py"]
+warn_unused_ignores = true
+warn_no_return = true
+warn_return_any = true
+warn_unreachable = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = "app.apps"
+ignore_errors = true
+
+# Я на работае намучился расставлять эти типы
+[[tool.mypy.overrides]]
+module = "app.tests.*"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "app.mockRepositories.*"
+disallow_untyped_defs = false
+
+[tool.bandit]
+skips = ["B101", "B102", "B103", "B108", "B201", "B202", "B311", "B321", "B324", "B402", "B404", "B506", "B603", "B608", "B701"]
+exclude_dirs = ["app/tests", ".venv", "venv", "node_modules"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+exclude = [
+    ".git",
+    ".pytest_cache",
+    "__pycache__",
+    "venv",
+    ".venv",
+    "node_modules",
+]
+
+[tool.ruff.lint]
+extend-select = [
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "I",   # isort
+    "N",   # pep8-naming
+    "PIE", # flake8-pie
+    "PGH", # pygrep
+    "RUF", # ruff checks
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "TID", # flake8-tidy-imports
+    "UP",  # pyupgrade
+    "PL",  # pylint
+    "G",   # flake8-logging-format
+    "F",   # pyflakes
+    "ERA", # (commented-out-code)
+    "E", "W", # pycodestyle
+]
+fixable = ["ALL"]
+ignore = [
+    "PLR0913",  # Too many arguments
+    "PLR2004",  # Magic values
+    "PLC0415",  # Top-level imports
+    "E501",  # Line too long (for mock data)
+    "RUF002",  # Cyrillic in docstrings
+    "RUF003",  # Cyrillic in comments
+    "RUF001",  # Cyrillic in strings
+    "TID252",  # Relative imports
+    "TC002",  # Type checking imports
+]
+pylint = { max-statements = 60 }
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-single-line = false
+lines-between-types = 1
+lines-after-imports = 2
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "askpupkin.settings"
@@ -26,3 +124,17 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "--tb=short -v"
 
+[tool.poe.tasks]
+poetry-check = "poetry check"
+ruff = "ruff check app/"
+ruff-format = "ruff format --check app/"
+mypy = "mypy"
+bandit = "bandit -c pyproject.toml -r app/ -ll"
+flake8 = "flake8 app/"
+pytest = "pytest app/tests/ -v"
+ci.sequence = ["poetry-check", "ruff", "ruff-format", "flake8", "mypy", "bandit", "pytest"]
+check.sequence = ["poetry-check", "ruff", "ruff-format", "flake8", "mypy", "bandit", "pytest"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
