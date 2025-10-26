@@ -5,17 +5,19 @@
 
 {% block content %}
 <div class="question-page">
-    <div class="question-main">
-        <div class="question-voting">
+    <div class="question-item">
+        <div class="question-left-column">
             <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="question-avatar">
-            <div class="voting-controls">
-                <button class="vote-btn vote-up">▲</button>
-                <span class="vote-count">{{ question.rating }}</span>
-                <button class="vote-btn vote-down">▼</button>
+            <div class="question-voting">
+                <div class="voting-controls">
+                    <button class="vote-btn vote-down">-</button>
+                    <span class="vote-count">{{ question.rating }}</span>
+                    <button class="vote-btn vote-up">+</button>
+                </div>
             </div>
         </div>
         
-        <div class="question-content">
+        <div class="question-right-column">
             <h1 class="question-title">{{ question.title }}</h1>
             <div class="question-text">
                 {{ question.text }}
@@ -33,23 +35,25 @@
         
         {% for answer in page %}
         <div class="answer-item">
-            <div class="answer-voting">
+            <div class="answer-left-column">
                 <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="answer-avatar">
-                <div class="voting-controls">
-                    <button class="vote-btn vote-up">▲</button>
-                    <span class="vote-count">{{ answer.rating }}</span>
-                    <button class="vote-btn vote-down">▼</button>
-                </div>
-            </div>
-            
-            <div class="answer-content">
-                <div class="answer-text">
-                    {{ answer.text }}
+                <div class="answer-voting">
+                    <div class="voting-controls">
+                        <button class="vote-btn vote-down">-</button>
+                        <span class="vote-count">{{ answer.rating }}</span>
+                        <button class="vote-btn vote-up">+</button>
+                    </div>
                 </div>
                 <div class="answer-meta">
                     <label class="correct-answer">
                         <input type="checkbox" {% if answer.is_correct %}checked{% endif %}> Correct!
                     </label>
+                </div>
+            </div>
+            
+            <div class="answer-right-column">
+                <div class="answer-text">
+                    {{ answer.text }}
                 </div>
             </div>
         </div>

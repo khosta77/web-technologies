@@ -52,17 +52,6 @@ body {
         text-align: left;
     }
     
-    .answer-item {
-        flex-direction: column;
-        text-align: left;
-    }
-    
-    .answer-voting {
-        flex-direction: row;
-        justify-content: flex-start;
-        gap: 15px;
-        margin-bottom: 15px;
-    }
     
     .pagination {
         flex-wrap: wrap;

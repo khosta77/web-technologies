@@ -201,37 +201,59 @@
 
 /* Страница вопроса */
 .question-page {
+    background-color: #f8f9fa;
+}
+
+.question-page .question-item {
     background-color: white;
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
 }
 
-.question-main {
+.question-page .question-left-column {
     display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 15px;
-    padding: 20px 0;
-    border-bottom: 1px solid #e9ecef;
-    margin-bottom: 30px;
+    min-width: 100px;
 }
 
-.question-main .question-voting {
-    min-width: 80px;
+.question-page .question-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
-.question-main .question-content {
+.question-page .question-voting {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.question-page .question-right-column {
     flex: 1;
+    min-width: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
-.question-main .question-title {
+.question-page .question-title {
     font-size: 24px;
     margin-bottom: 15px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
-.question-main .question-text {
+.question-page .question-text {
     font-size: 16px;
     line-height: 1.6;
     margin-bottom: 20px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
 }
 
 /* Ответы */
@@ -245,38 +267,49 @@
 }
 
 .answer-item {
-    display: flex;
-    gap: 15px;
-    padding: 20px 0;
-    border-bottom: 1px solid #e9ecef;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 20px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
 }
 
-.answer-item:last-child {
-    border-bottom: none;
+.answer-left-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    min-width: 100px;
+}
+
+.answer-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
 .answer-voting {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    min-width: 80px;
 }
 
-.answer-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.answer-content {
+.answer-right-column {
     flex: 1;
+    min-width: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .answer-text {
     margin-bottom: 15px;
     line-height: 1.6;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .answer-meta {
@@ -679,5 +712,174 @@
     
     .question-text {
         font-size: 12px;
+    }
+}
+
+/* Медиа-запросы для страницы вопроса */
+@media (max-width: 768px) {
+    .question-page .question-item {
+        grid-template-columns: auto 1fr;
+        gap: 15px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .question-page .question-left-column {
+        gap: 12px;
+        min-width: 80px;
+    }
+    
+    .question-page .question-avatar {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .question-page .question-voting {
+        gap: 3px;
+    }
+    
+    .question-page .question-right-column {
+        width: 100%;
+    }
+    
+    .question-page .question-title {
+        font-size: 18px;
+    }
+    
+    .question-page .question-text {
+        font-size: 14px;
+    }
+    
+    .answer-item {
+        grid-template-columns: auto 1fr;
+        gap: 15px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .answer-left-column {
+        gap: 12px;
+        min-width: 80px;
+    }
+    
+    .answer-avatar {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .answer-voting {
+        gap: 3px;
+    }
+    
+    .answer-right-column {
+        width: 100%;
+    }
+    
+    .answer-form {
+        padding: 15px 0;
+    }
+    
+    .answer-form textarea {
+        min-height: 120px;
+    }
+}
+
+@media (max-width: 480px) {
+    .question-page {
+        padding: 15px;
+    }
+    
+    .question-page .question-item {
+        grid-template-columns: auto 1fr;
+        gap: 12px;
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .question-page .question-left-column {
+        gap: 10px;
+        min-width: 70px;
+    }
+    
+    .question-page .question-avatar {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .question-page .question-title {
+        font-size: 16px;
+    }
+    
+    .question-page .question-text {
+        font-size: 13px;
+    }
+    
+    .answer-item {
+        grid-template-columns: auto 1fr;
+        gap: 12px;
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .answer-left-column {
+        gap: 10px;
+        min-width: 70px;
+    }
+    
+    .answer-avatar {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .answers-section h2 {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 370px) {
+    .question-page {
+        padding: 10px;
+    }
+    
+    .question-page .question-item {
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .question-page .question-left-column {
+        gap: 8px;
+        min-width: 60px;
+    }
+    
+    .question-page .question-avatar {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .question-page .question-title {
+        font-size: 14px;
+    }
+    
+    .question-page .question-text {
+        font-size: 12px;
+    }
+    
+    .answer-item {
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .answer-left-column {
+        gap: 8px;
+        min-width: 60px;
+    }
+    
+    .answer-avatar {
+        width: 40px;
+        height: 40px;
     }
 }
