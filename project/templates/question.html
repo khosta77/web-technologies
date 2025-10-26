@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}How to build a moon park? - AskPupkin{% endblock %}
+{% block title %}{{ question.title }} - AskPupkin{% endblock %}
 
 {% block content %}
 <div class="question-page">
@@ -10,69 +10,52 @@
             <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="question-avatar">
             <div class="voting-controls">
                 <button class="vote-btn vote-up">▲</button>
-                <span class="vote-count">5</span>
+                <span class="vote-count">{{ question.rating }}</span>
                 <button class="vote-btn vote-down">▼</button>
             </div>
         </div>
         
         <div class="question-content">
-            <h1 class="question-title">How to build a moon park ?</h1>
+            <h1 class="question-title">{{ question.title }}</h1>
             <div class="question-text">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                {{ question.text }}
             </div>
             <div class="question-tags">
-                <a href="{% url 'tags' %}" class="tag">black-jack</a>
-                <a href="{% url 'tags' %}" class="tag">bender</a>
+                {% for tag in question.tags %}
+                <a href="{% url 'tag' tag_name=tag %}" class="tag">{{ tag }}</a>
+                {% endfor %}
             </div>
         </div>
     </div>
     
     <div class="answers-section">
-        <h2>Answers</h2>
+        <h2 id="answers">Answers ({{ page.paginator.count }})</h2>
         
+        {% for answer in page %}
         <div class="answer-item">
             <div class="answer-voting">
                 <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="answer-avatar">
                 <div class="voting-controls">
                     <button class="vote-btn vote-up">▲</button>
-                    <span class="vote-count">5</span>
+                    <span class="vote-count">{{ answer.rating }}</span>
                     <button class="vote-btn vote-down">▼</button>
                 </div>
             </div>
             
             <div class="answer-content">
                 <div class="answer-text">
-                    First of all I would like to thank you for the invitation to participate in such a wonderful discussion. Russia is the huge territory which in many respects needs to be render habitable. The moon park project could be a great opportunity for international cooperation and technological advancement.
+                    {{ answer.text }}
                 </div>
                 <div class="answer-meta">
                     <label class="correct-answer">
-                        <input type="checkbox" checked> Correct!
+                        <input type="checkbox" {% if answer.is_correct %}checked{% endif %}> Correct!
                     </label>
                 </div>
             </div>
         </div>
+        {% endfor %}
         
-        <div class="answer-item">
-            <div class="answer-voting">
-                <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="answer-avatar">
-                <div class="voting-controls">
-                    <button class="vote-btn vote-up">▲</button>
-                    <span class="vote-count">3</span>
-                    <button class="vote-btn vote-down">▼</button>
-                </div>
-            </div>
-            
-            <div class="answer-content">
-                <div class="answer-text">
-                    I think the main challenge would be dealing with the low gravity environment and ensuring proper life support systems. You'll need specialized equipment and extensive testing before any construction begins.
-                </div>
-                <div class="answer-meta">
-                    <label class="correct-answer">
-                        <input type="checkbox"> Correct!
-                    </label>
-                </div>
-            </div>
-        </div>
+        {% include 'paginator.html' %}
         
         <div class="answer-form">
             <h3>Your Answer</h3>
