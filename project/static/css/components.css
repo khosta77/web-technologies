@@ -158,9 +158,10 @@
 }
 
 .page-link.active {
-    background-color: #007bff;
+    background-color: #333;
     color: white;
-    border-color: #007bff;
+    border-color: #333;
+    cursor: default;
 }
 
 .page-dots {

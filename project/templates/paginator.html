@@ -1,18 +1,27 @@
 {% if page.has_other_pages %}
 <div class="pagination">
-    {% if page.has_previous %}
-        <a href="?page=1">&laquo; first</a>
-        <a href="?page={{ page.previous_page_number }}">previous</a>
-    {% endif %}
-    
-    <span class="page-info">
-        Page {{ page.number }} of {{ page.paginator.num_pages }}
-    </span>
-    
-    {% if page.has_next %}
-        <a href="?page={{ page.next_page_number }}">next</a>
-        <a href="?page={{ page.paginator.num_pages }}">last &raquo;</a>
-    {% endif %}
+    {% with total_pages=page.paginator.num_pages current_page=page.number %}
+        {% if current_page > 3 %}
+            <a href="?page=1" class="page-link">1</a>
+            {% if current_page > 4 %}
+                <span class="page-dots">...</span>
+            {% endif %}
+        {% endif %}
+
+        {% for num in page.paginator.page_range %}
+            {% if num == current_page %}
+                <span class="page-link active">{{ num }}</span>
+            {% elif num >= current_page|add:"-2" and num <= current_page|add:"2" %}
+                <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if current_page < total_pages|add:"-2" %}
+            {% if current_page < total_pages|add:"-3" %}
+                <span class="page-dots">...</span>
+            {% endif %}
+            <a href="?page={{ total_pages }}" class="page-link">{{ total_pages }}</a>
+        {% endif %}
+    {% endwith %}
 </div>
 {% endif %}
-
