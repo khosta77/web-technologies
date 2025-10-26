@@ -9,15 +9,19 @@
 <div class="auth-page">
     <h1>Log In</h1>
     
-    <div class="error-messages" style="display: none;">
-        <!-- Ошибки будут добавляться динамически через JavaScript -->
-    </div>
+        {% if messages %}
+        <div class="error-messages">
+            {% for message in messages %}
+            <p class="error-message">{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
     
-    <form method="post" class="auth-form">
+    <form method="post" class="auth-form" action="{% url 'login' %}">
         {% csrf_token %}
         <div class="form-group">
             <label for="login">Login</label>
-            <input type="text" id="login" name="login" placeholder="Enter yor login here" class="form-control" required>
+            <input type="text" id="login" name="username" placeholder="Enter your login here" class="form-control" required>
         </div>
         
         <div class="form-group">

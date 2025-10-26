@@ -31,19 +31,26 @@
                 <div class="user-block">
                     <img src="{% static 'img/search.jpg' %}" alt="Search" class="search-toggle-icon">
                     
+                    {% if user %}
+                    <div class="user-dropdown" id="userDropdown">
+                        <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="user-avatar" id="avatarBtn">
+                        <div class="dropdown-menu" id="dropdownMenu">
+                            <div class="dropdown-header">
+                                <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="dropdown-avatar">
+                                <span class="dropdown-username">{{ user.username }}</span>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <a href="{% url 'settings' %}" class="dropdown-item">settings</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="{% url 'logout' %}" class="dropdown-item">log out</a>
+                        </div>
+                    </div>
+                    {% else %}
                     <div class="auth-links">
                         <a href="{% url 'login' %}" class="btn btn-outline">Войти</a>
                         <a href="{% url 'signup' %}" class="btn btn-primary">Регистрация</a>
                     </div>
-                    
-                    <div class="user-info" style="display: none;">
-                        <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="user-avatar">
-                        <span class="user-name">Dr. Pepper</span>
-                        <div class="user-menu">
-                            <a href="{% url 'settings' %}">settings</a>
-                            <a href="{% url 'index' %}">log out</a>
-                        </div>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -108,5 +115,6 @@
     </footer>
     
     <script src="{% static 'js/search.js' %}"></script>
+    <script src="{% static 'js/dropdown.js' %}"></script>
 </body>
 </html>
