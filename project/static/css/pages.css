@@ -383,7 +383,6 @@
     align-items: normal !important;
     height: auto !important;
     box-sizing: content-box !important;
-    margin-top: 0 !important;
 }
 
 .auth-form .auth-links a:hover {

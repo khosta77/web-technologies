@@ -159,9 +159,8 @@
     display: flex;
     line-height: 1;
     align-items: center;
-    height: 35px; /* Добавить фиксированную высоту */
-    box-sizing: border-box; /* Учесть padding в общей высоте */
-    margin-top: -12px; /* Смещаем кнопки вверх для выравнивания с логотипом */
+    height: 35px;
+    box-sizing: border-box;
 }
 
 .btn-outline {
@@ -404,7 +403,6 @@
         align-items: center;
         height: 35px;
         box-sizing: border-box;
-        margin-top: -12px;
     }
     
     .search-widget-content {
