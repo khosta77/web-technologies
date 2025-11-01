@@ -109,7 +109,7 @@
 /* Система голосования */
 .voting-controls {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     gap: 5px;
 }
@@ -158,12 +158,22 @@
 }
 
 .page-link.active {
-    background-color: #007bff;
+    background-color: #333;
     color: white;
-    border-color: #007bff;
+    border-color: #333;
+    cursor: default;
 }
 
 .page-dots {
     padding: 8px 12px;
     color: #6c757d;
+}
+
+.page-info {
+    padding: 8px 16px;
+    background-color: #f8f9fa;
+    color: #333;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    font-weight: 500;
 }

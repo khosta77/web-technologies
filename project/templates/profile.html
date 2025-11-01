@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ profile_user.username }} - Profile - AskPupkin{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+    <div class="profile-header">
+        <img src="{% static profile_user.avatar %}" alt="Avatar" class="profile-avatar">
+        <div class="profile-info">
+            <h1>{{ profile_user.username }}</h1>
+            <p class="profile-stats">
+                <span class="stat-item">
+                    <strong>{{ profile_user.rating }}</strong> rating
+                </span>
+                <span class="stat-item">
+                    <strong>{{ profile_user.questions_count }}</strong> questions
+                </span>
+                <span class="stat-item">
+                    <strong>{{ profile_user.answers_count }}</strong> answers
+                </span>
+            </p>
+        </div>
+    </div>
+    
+    <div class="profile-tabs">
+        <button class="tab-btn active" onclick="showSection('questions')">Questions</button>
+        <button class="tab-btn" onclick="showSection('answers')">Answers</button>
+    </div>
+    
+    <div id="questions-section" class="content-section">
+        {% if user_questions %}
+        <h2>Questions ({{ user_questions|length }})</h2>
+        <div class="questions-list">
+            {% for q in user_questions %}
+            <div class="question-item">
+                <div class="question-left-column">
+                    <div class="question-voting">
+                        <div class="voting-controls">
+                            <button class="vote-btn vote-down">-</button>
+                            <span class="vote-count">{{ q.rating }}</span>
+                            <button class="vote-btn vote-up">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="question-right-column">
+                    <h3 class="question-title">
+                        <a href="{% url 'question' question_id=q.id %}">{{ q.title }}</a>
+                    </h3>
+                    <p class="question-text">{{ q.text|truncatewords:30 }}</p>
+                    <div class="question-meta">
+                        <span>{{ q.date }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty-state">No questions yet</p>
+        {% endif %}
+    </div>
+    
+    <div id="answers-section" class="content-section" style="display: none;">
+        {% if user_answers %}
+        <h2>Answers ({{ user_answers|length }})</h2>
+        <div class="answers-list">
+            {% for answer in user_answers %}
+            <div class="answer-item">
+                <div class="answer-left-column">
+                    <div class="answer-voting">
+                        <div class="voting-controls">
+                            <button class="vote-btn vote-down">-</button>
+                            <span class="vote-count">{{ answer.rating }}</span>
+                            <button class="vote-btn vote-up">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="answer-right-column">
+                    <p class="answer-text">{{ answer.text|truncatewords:50 }}</p>
+                    <div class="answer-meta">
+                        <span>{{ answer.date }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty-state">No answers yet</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function showSection(section) {
+    // Hide all sections
+    document.getElementById('questions-section').style.display = 'none';
+    document.getElementById('answers-section').style.display = 'none';
+    
+    // Remove active class from all buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    
+    // Show selected section
+    document.getElementById(section + '-section').style.display = 'block';
+    
+    // Add active class to clicked button
+    event.target.classList.add('active');
+}
+</script>
+
+<style>
+.profile-page {
+    max-width: 900px;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 30px 0;
+    border-bottom: 2px solid #e9ecef;
+    margin-bottom: 30px;
+}
+
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profile-info h1 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 28px;
+}
+
+.profile-stats {
+    display: flex;
+    gap: 20px;
+    margin: 0;
+}
+
+.stat-item {
+    color: #6c757d;
+}
+
+.stat-item strong {
+    color: #333;
+}
+
+.profile-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    border: 1px solid #e9ecef;
+    background: white;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    background: #f8f9fa;
+}
+
+.tab-btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.content-section h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.empty-state {
+    text-align: center;
+    color: #6c757d;
+    padding: 40px 0;
+    font-size: 18px;
+}
+
+.question-meta,
+.answer-meta {
+    font-size: 13px;
+    color: #6c757d;
+    margin-top: 10px;
+}
+</style>
+{% endblock %}
+

@@ -1,16 +1,16 @@
-{% extends 'base.html' %}
+{% extends 'base_auth.html' %}
 {% load static %}
 
 {% block title %}Registration - AskPupkin{% endblock %}
+
+{% block signup_button %}{% endblock %}
 
 {% block content %}
 <div class="auth-page">
     <h1>Registration</h1>
     
-    <div class="error-messages">
-        <div class="alert alert-error">
-            Sorry, this email address allready registred!
-        </div>
+    <div class="error-messages" style="display: none;">
+        <!-- Ошибки будут добавляться динамически через JavaScript -->
     </div>
     
     <form method="post" class="auth-form" enctype="multipart/form-data">
@@ -49,11 +49,13 @@
             </div>
         </div>
         
-        <button type="submit" class="btn btn-primary">Register!</button>
-        
-        <div class="auth-links">
-            <a href="{% url 'login' %}">log in</a>
+        <div class="auth-button-row">
+            <button type="submit" class="btn btn-primary">Register!</button>
+            <div class="auth-links">
+                <a href="{% url 'login' %}">log in</a>
+            </div>
         </div>
     </form>
 </div>
+<script src="{% static 'js/validation.js' %}"></script>
 {% endblock %}

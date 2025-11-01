@@ -1,0 +1,32 @@
+{% extends 'base_auth.html' %}
+{% load static %}
+
+{% block title %}500 - Ошибка сервера - AskPupkin{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-content">
+        <div class="error-icon">
+            <h1 class="error-code">500</h1>
+        </div>
+        <h2 class="error-title">Ошибка сервера</h2>
+        <p class="error-message">
+            Произошла внутренняя ошибка сервера. Мы уже работаем над устранением проблемы.
+        </p>
+        <div class="error-actions">
+            <a href="{% url 'index' %}" class="btn btn-primary">На главную</a>
+            <a href="javascript:location.reload();" class="btn btn-outline">Обновить страницу</a>
+        </div>
+        <div class="error-suggestions">
+            <h3>Что делать:</h3>
+            <ul>
+                <li>Попробуйте обновить страницу</li>
+                <li>Проверьте правильность введенного URL</li>
+                <li>Вернитесь на <a href="{% url 'index' %}">главную страницу</a></li>
+                <li>Если проблема повторяется, сообщите администратору</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,15 @@
+[flake8]
+max-line-length = 100
+exclude = 
+    .ruff_cache,
+    venv,
+    static,
+    templates,
+    .pytest_cache,
+    .mypy_cache,
+    askpupkin,
+    app/__pycache__,
+    app/mockRepositories/mock_data_frames.py
+extend-ignore = I,D,WPS,S,C812,C813,C815,E203,Q000,N400,RST301
+per-file-ignores =
+    app/tests/*:S,D103

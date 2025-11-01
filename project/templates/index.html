@@ -6,102 +6,47 @@
 {% block content %}
 <div class="questions-section">
     <div class="questions-header">
-        <h1>New Questions</h1>
-        <a href="{% url 'hot' %}" class="hot-link">Hot Questions</a>
+        <h1>Исследуйте вопросы сообщества</h1>
+        <a href="{% url 'ask' %}" class="btn btn-primary ask-question-btn">Задать вопрос</a>
     </div>
     
     <div class="questions-list">
+        {% for question in page %}
         <div class="question-item">
-            <div class="question-voting">
+            <!-- Левая колонка: аватар + голосование + ответы -->
+            <div class="question-left-column">
                 <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="question-avatar">
-                <div class="voting-controls">
-                    <button class="vote-btn vote-up">▲</button>
-                    <span class="vote-count">5</span>
-                    <button class="vote-btn vote-down">▼</button>
+                <div class="question-voting">
+                    <div class="voting-controls">
+                        <button class="vote-btn vote-down">-</button>
+                        <span class="vote-count">{{ question.rating }}</span>
+                        <button class="vote-btn vote-up">+</button>
+                    </div>
+                </div>
+                <div class="question-meta">
+                    <a href="{% url 'question' question_id=question.id %}#answers" class="answers-count">answer ({{ question.answers_count }})</a>
                 </div>
             </div>
             
-            <div class="question-content">
+            <!-- Правая колонка: название + теги + текст -->
+            <div class="question-right-column">
                 <h2 class="question-title">
-                    <a href="{% url 'question' question_id=123 %}">How to build a moon park ?</a>
+                    <a href="{% url 'question' question_id=question.id %}">{{ question.title }}</a>
                 </h2>
-                <p class="question-text">
-                    Guys, i have trouble with a moon park. Can't find th black-jack...
-                </p>
-                <div class="question-meta">
-                    <a href="{% url 'question' question_id=123 %}#answers" class="answers-count">answer (3)</a>
-                    <div class="question-tags">
-                        <span>Tags:</span>
-                        <a href="{% url 'tags' %}" class="tag">black-jack</a>
-                        <a href="{% url 'tags' %}" class="tag">bender</a>
-                    </div>
+                <div class="question-tags">
+                    <span>Tags:</span>
+                    {% for tag in question.tags %}
+                    <a href="{% url 'tag' tag_name=tag %}" class="tag">{{ tag }}</a>
+                    {% endfor %}
                 </div>
+                <p class="question-text">
+                    {{ question.text }}
+                </p>
             </div>
         </div>
-        
-        <div class="question-item">
-            <div class="question-voting">
-                <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="question-avatar">
-                <div class="voting-controls">
-                    <button class="vote-btn vote-up">▲</button>
-                    <span class="vote-count">3</span>
-                    <button class="vote-btn vote-down">▼</button>
-                </div>
-            </div>
-            
-            <div class="question-content">
-                <h2 class="question-title">
-                    <a href="{% url 'question' question_id=124 %}">How to configure Django settings?</a>
-                </h2>
-                <p class="question-text">
-                    I need help with Django configuration. What are the best practices?
-                </p>
-                <div class="question-meta">
-                    <a href="{% url 'question' question_id=124 %}#answers" class="answers-count">answer (7)</a>
-                    <div class="question-tags">
-                        <span>Tags:</span>
-                        <a href="{% url 'tags' %}" class="tag tag-green">django</a>
-                        <a href="{% url 'tags' %}" class="tag tag-red">python</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="question-item">
-            <div class="question-voting">
-                <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="question-avatar">
-                <div class="voting-controls">
-                    <button class="vote-btn vote-up">▲</button>
-                    <span class="vote-count">8</span>
-                    <button class="vote-btn vote-down">▼</button>
-                </div>
-            </div>
-            
-            <div class="question-content">
-                <h2 class="question-title">
-                    <a href="{% url 'question' question_id=125 %}">Best practices for MySQL optimization</a>
-                </h2>
-                <p class="question-text">
-                    Looking for tips on how to optimize MySQL database performance...
-                </p>
-                <div class="question-meta">
-                    <a href="{% url 'question' question_id=125 %}#answers" class="answers-count">answer (12)</a>
-                    <div class="question-tags">
-                        <span>Tags:</span>
-                        <a href="{% url 'tags' %}" class="tag tag-red">MySQL</a>
-                        <a href="{% url 'tags' %}" class="tag">database</a>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {% endfor %}
     </div>
     
-    <div class="pagination">
-        <a href="{% url 'index' %}?page=1" class="page-link active">1</a>
-        <a href="{% url 'index' %}?page=2" class="page-link">2</a>
-        <a href="{% url 'index' %}?page=3" class="page-link">3</a>
-        <span class="page-dots">...</span>
-        <a href="{% url 'index' %}?page=53" class="page-link">53</a>
-    </div>
+    {% include 'paginator.html' %}
 </div>
 {% endblock %}

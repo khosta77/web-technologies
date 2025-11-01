@@ -1,23 +1,27 @@
-{% extends 'base.html' %}
+{% extends 'base_auth.html' %}
 {% load static %}
 
 {% block title %}Log In - AskPupkin{% endblock %}
+
+{% block login_button %}{% endblock %}
 
 {% block content %}
 <div class="auth-page">
     <h1>Log In</h1>
     
-    <div class="error-messages">
-        <div class="alert alert-error">
-            Sorry, wrong password!
+        {% if messages %}
+        <div class="error-messages">
+            {% for message in messages %}
+            <p class="error-message">{{ message }}</p>
+            {% endfor %}
         </div>
-    </div>
+        {% endif %}
     
-    <form method="post" class="auth-form">
+    <form method="post" class="auth-form" action="{% url 'login' %}">
         {% csrf_token %}
         <div class="form-group">
             <label for="login">Login</label>
-            <input type="text" id="login" name="login" placeholder="Enter yor login here" class="form-control" required>
+            <input type="text" id="login" name="username" placeholder="Enter your login here" class="form-control" required>
         </div>
         
         <div class="form-group">
@@ -25,11 +29,13 @@
             <input type="password" id="password" name="password" class="form-control" required>
         </div>
         
-        <button type="submit" class="btn btn-primary">Log in!</button>
-        
-        <div class="auth-links">
-            <a href="{% url 'signup' %}">create new account</a>
+        <div class="auth-button-row">
+            <button type="submit" class="btn btn-primary">Log in!</button>
+            <div class="auth-links">
+                <a href="{% url 'signup' %}">create new account</a>
+            </div>
         </div>
     </form>
 </div>
+<script src="{% static 'js/login-validation.js' %}"></script>
 {% endblock %}

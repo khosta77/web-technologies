@@ -15,33 +15,54 @@
         <div class="container">
             <div class="header-content">
                 <div class="logo">
-                    <a href="{% url 'index' %}">AskPupkin</a>
+                    <a href="{% url 'index' %}" class="logo-link">
+                        <img src="{% static 'img/logo.png' %}" alt="AskPupkin" class="logo-img">
+                        <span class="logo-text">AskPupkin</span>
+                    </a>
                 </div>
                 
-                <div class="search">
-                    <input type="text" placeholder="Search" class="search-input">
-                    <button class="search-btn">🔍</button>
-                </div>
-                
-                <div class="ask-btn">
-                    <a href="{% url 'ask' %}" class="btn btn-primary">ASK!</a>
+                <div class="search-field">
+                    <div class="search-input-container">
+                        <img src="{% static 'img/search.jpg' %}" alt="Search" class="search-icon">
+                        <input type="text" placeholder="Поиск..." class="search-input-field" id="searchInputField">
+                    </div>
                 </div>
                 
                 <div class="user-block">
-                    <div class="auth-links">
-                        <a href="{% url 'login' %}">log in</a>
-                        <a href="{% url 'signup' %}">register</a>
-                    </div>
+                    <img src="{% static 'img/search.jpg' %}" alt="Search" class="search-toggle-icon">
                     
-                    <div class="user-info" style="display: none;">
-                        <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="user-avatar">
-                        <span class="user-name">Dr. Pepper</span>
-                        <div class="user-menu">
-                            <a href="{% url 'settings' %}">settings</a>
-                            <a href="{% url 'index' %}">log out</a>
+                    {% if user %}
+                    <div class="user-dropdown" id="userDropdown">
+                        <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="user-avatar" id="avatarBtn">
+                        <div class="dropdown-menu" id="dropdownMenu">
+                            <div class="dropdown-header">
+                                <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="dropdown-avatar">
+                                <span class="dropdown-username">{{ user.username }}</span>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <a href="{% url 'settings' %}" class="dropdown-item">settings</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="{% url 'logout' %}" class="dropdown-item">log out</a>
                         </div>
                     </div>
+                    {% else %}
+                    <div class="auth-links">
+                        <a href="{% url 'login' %}" class="btn btn-outline">Войти</a>
+                        <a href="{% url 'signup' %}" class="btn btn-primary">Регистрация</a>
+                    </div>
+                    {% endif %}
                 </div>
+            </div>
+        </div>
+        
+        <!-- Всплывающий виджет поиска -->
+        <div class="search-widget" id="searchWidget">
+            <div class="search-widget-content">
+                <div class="search-input-container">
+                        <img src="{% static 'img/search.jpg' %}" alt="Search" class="search-widget-icon">
+                    <input type="text" placeholder="Поиск..." class="search-input" id="searchInput">
+                </div>
+                <button class="search-close-btn" id="searchClose">×</button>
             </div>
         </div>
     </header>
@@ -56,27 +77,31 @@
                 
                 <aside class="right-column">
                     <div class="sidebar-block">
-                        <h3>Popular Tags</h3>
+                        <div class="sidebar-header">
+                            <h3>Popular Tags</h3>
+                            <h3><a href="{% url 'hot' %}" class="hot-questions-link">Hot Questions</a></h3>
+                        </div>
                         <div class="tags-list">
-                            <a href="{% url 'tags' %}" class="tag">perl</a>
-                            <a href="{% url 'tags' %}" class="tag tag-red">python</a>
-                            <a href="{% url 'tags' %}" class="tag">TechnoPark</a>
-                            <a href="{% url 'tags' %}" class="tag tag-red">MySQL</a>
-                            <a href="{% url 'tags' %}" class="tag tag-green">django</a>
-                            <a href="{% url 'tags' %}" class="tag">Mail.Ru</a>
-                            <a href="{% url 'tags' %}" class="tag">Voloshin</a>
-                            <a href="{% url 'tags' %}" class="tag tag-orange">Firefox</a>
+                            <a href="{% url 'tag' tag_name='python' %}" class="tag tag-red">python</a>
+                            <a href="{% url 'tag' tag_name='django' %}" class="tag tag-green">django</a>
+                            <a href="{% url 'tag' tag_name='javascript' %}" class="tag">javascript</a>
+                            <a href="{% url 'tag' tag_name='react' %}" class="tag">react</a>
+                            <a href="{% url 'tag' tag_name='docker' %}" class="tag">docker</a>
+                            <a href="{% url 'tag' tag_name='mysql' %}" class="tag tag-red">MySQL</a>
+                            <a href="{% url 'tag' tag_name='postgresql' %}" class="tag">postgresql</a>
+                            <a href="{% url 'tags' %}" class="tag tag-orange">View all tags</a>
                         </div>
                     </div>
                     
                     <div class="sidebar-block">
                         <h3>Best Members</h3>
                         <div class="members-list">
-                            <a href="{% url 'index' %}">Mr. Freeman</a>
-                            <a href="{% url 'index' %}">Dr. House</a>
-                            <a href="{% url 'index' %}">Bender</a>
-                            <a href="{% url 'index' %}">Queen Victoria</a>
-                            <a href="{% url 'index' %}">V. Pupkin</a>
+                            {% for member in best_members %}
+                            <div class="member-item">
+                                <span class="member-rating">{{ member.rating }}</span>
+                                <a href="{% url 'profile' user_id=member.id %}">{{ member.username }}</a>
+                            </div>
+                            {% endfor %}
                         </div>
                     </div>
                 </aside>
@@ -89,5 +114,8 @@
             <p>&copy; 2025 AskPupkin. All rights reserved.</p>
         </div>
     </footer>
+    
+    <script src="{% static 'js/search.js' %}"></script>
+    <script src="{% static 'js/dropdown.js' %}"></script>
 </body>
 </html>
