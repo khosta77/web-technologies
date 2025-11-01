@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, re_path
 
 from . import views
 
@@ -15,4 +15,5 @@ urlpatterns = [
     path("ask/", views.ask, name="ask"),
     path("settings/", views.settings, name="settings"),
     path("profile/<int:user_id>/", views.profile, name="profile"),
+    re_path(r"^.*$", views.custom_404_view),
 ]

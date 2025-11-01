@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from django.contrib import messages
-from django.http import HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
 from .constants import ANSWERS_PER_PAGE, QUESTIONS_PER_PAGE
@@ -50,6 +50,9 @@ def hot(request: HttpRequest) -> HttpResponse:
 def question(request: HttpRequest, question_id: int) -> HttpResponse:
     """Страница одного вопроса"""
     question_obj = question_repository.get_question_by_id(question_id)
+    if not question_obj:
+        raise Http404("Вопрос не найден")
+
     answers = answer_repository.get_answers_by_question_id(question_id)
     user = get_authenticated_user(request)
 
@@ -174,8 +177,7 @@ def profile(request: HttpRequest, user_id: int) -> HttpResponse:
     profile_user = user_repository.get_user_by_id(user_id)
 
     if not profile_user:
-        messages.error(request, "Пользователь не найден")
-        return redirect("index")
+        raise Http404("Пользователь не найден")
 
     # Получаем вопросы и ответы пользователя
     user_questions = user_repository.get_user_questions(user_id)
@@ -198,3 +200,9 @@ def logout(request: HttpRequest) -> HttpResponse:
     request.session.flush()
     messages.success(request, "Вы успешно вышли из системы")
     return redirect("index")
+
+
+def custom_404_view(request: HttpRequest, exception: Exception | None = None) -> HttpResponse:
+    """Кастомная страница 404"""
+    user = get_authenticated_user(request)
+    return render(request, "404.html", {"user": user}, status=404)

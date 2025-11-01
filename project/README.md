@@ -134,3 +134,11 @@ poetry run poe ci
 
 - **Backend:** Django 5.2.7
 - **Frontend:** HTML, CSS, JavaScript
+
+---
+
+Важно, перед каждым запуском проводить:
+
+```bash
+poetry run poe ci
+```
