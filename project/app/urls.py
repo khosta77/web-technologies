@@ -15,5 +15,6 @@ urlpatterns = [
     path("ask/", views.ask, name="ask"),
     path("settings/", views.settings, name="settings"),
     path("profile/<int:user_id>/", views.profile, name="profile"),
-    re_path(r"^.*$", views.custom_404_view),
+    # Catch-all для всех несуществующих URL (исключаем /media/ и /static/)
+    re_path(r"^(?!media/|static/).*$", views.custom_404_view),
 ]

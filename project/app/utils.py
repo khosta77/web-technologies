@@ -3,15 +3,18 @@ from __future__ import annotations
 from typing import Any
 
 from django.core.paginator import EmptyPage, Page, PageNotAnInteger, Paginator
+from django.db.models import QuerySet
 from django.http import HttpRequest
 
 
-def paginate(objects_list: list[Any], request: HttpRequest, per_page: int = 10) -> Page[Any]:
+def paginate(
+    objects_list: list[Any] | QuerySet[Any], request: HttpRequest, per_page: int = 10
+) -> Page[Any]:
     """
     Функция для пагинации объектов.
 
     Args:
-        objects_list: список объектов для пагинации
+        objects_list: список объектов или QuerySet для пагинации
         request: объект запроса Django
         per_page: количество объектов на странице (по умолчанию 10)
 

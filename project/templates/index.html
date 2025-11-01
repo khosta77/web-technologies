@@ -24,7 +24,7 @@
                     </div>
                 </div>
                 <div class="question-meta">
-                    <a href="{% url 'question' question_id=question.id %}#answers" class="answers-count">answer ({{ question.answers_count }})</a>
+                    <a href="{% url 'question' question_id=question.id %}#answers" class="answers-count">answer ({{ question.get_answers_count }})</a>
                 </div>
             </div>
             
@@ -35,8 +35,8 @@
                 </h2>
                 <div class="question-tags">
                     <span>Tags:</span>
-                    {% for tag in question.tags %}
-                    <a href="{% url 'tag' tag_name=tag %}" class="tag">{{ tag }}</a>
+                    {% for tag in question.tags.all %}
+                    <a href="{% url 'tag' tag_name=tag.name %}" class="tag">{{ tag.name }}</a>
                     {% endfor %}
                 </div>
                 <p class="question-text">

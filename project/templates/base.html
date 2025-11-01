@@ -33,10 +33,18 @@
                     
                     {% if user %}
                     <div class="user-dropdown" id="userDropdown">
+                        {% if user.profile and user.profile.avatar %}
+                        <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="user-avatar" id="avatarBtn">
+                        {% else %}
                         <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="user-avatar" id="avatarBtn">
+                        {% endif %}
                         <div class="dropdown-menu" id="dropdownMenu">
                             <div class="dropdown-header">
+                                {% if user.profile and user.profile.avatar %}
+                                <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="dropdown-avatar">
+                                {% else %}
                                 <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="dropdown-avatar">
+                                {% endif %}
                                 <span class="dropdown-username">{{ user.username }}</span>
                             </div>
                             <div class="dropdown-divider"></div>

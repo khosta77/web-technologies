@@ -2,12 +2,20 @@
 URL configuration for askpupkin project.
 """
 
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
 from app.handlers import handler404, handler500
 
-urlpatterns = [
+# Поддержка media файлов в режиме разработки (добавляем ПЕРВЫМИ)
+urlpatterns = []
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Основные URL паттерны
+urlpatterns += [
     path("admin/", admin.site.urls),
     path("", include("app.urls")),
 ]
