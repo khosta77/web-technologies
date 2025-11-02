@@ -63,17 +63,12 @@ poetry run python manage.py changepassword <username>
 poetry run python manage.py shell -c "from django.contrib.auth.models import User; [print(f'{u.id}: {u.username}') for u in User.objects.all()]"
 ```
 
-## Создание тестовых пользователей
+## Создание суперпользователя для доступа к админ-панели
 
-Для создания тестовых пользователей используйте команду:
+Для доступа к Django админ-панели (`http://127.0.0.1:8000/admin/`) необходимо создать суперпользователя:
 
 ```bash
-poetry run python manage.py fill_db 100
+poetry run python manage.py createsuperuser
 ```
 
-Эта команда создаст:
-- 100 пользователей (с паролем `12345`)
-- 1000 вопросов
-- 10000 ответов
-- 100 тегов
-
+**Важно:** При заходе на страницу `/admin/` возникнет ошибка 500 - так и должно быть)))
