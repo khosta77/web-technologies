@@ -7,11 +7,13 @@
 <div class="question-page">
     <div class="question-item">
         <div class="question-left-column">
-            {% if question.author.profile and question.author.profile.avatar %}
-            <img src="{{ question.author.profile.avatar.url }}" alt="Avatar" class="question-avatar">
-            {% else %}
-            <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="question-avatar">
-            {% endif %}
+            <a href="{% url 'profile' user_id=question.author.id %}">
+                {% if question.author.profile and question.author.profile.avatar %}
+                <img src="{{ question.author.profile.avatar.url }}" alt="Avatar" class="question-avatar">
+                {% else %}
+                <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="question-avatar">
+                {% endif %}
+            </a>
             <div class="question-voting">
                 <div class="voting-controls">
                     <button class="vote-btn vote-down">-</button>
@@ -40,11 +42,13 @@
         {% for answer in page %}
         <div class="answer-item">
             <div class="answer-left-column">
-                {% if answer.author.profile and answer.author.profile.avatar %}
-                <img src="{{ answer.author.profile.avatar.url }}" alt="Avatar" class="answer-avatar">
-                {% else %}
-                <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="answer-avatar">
-                {% endif %}
+                <a href="{% url 'profile' user_id=answer.author.id %}">
+                    {% if answer.author.profile and answer.author.profile.avatar %}
+                    <img src="{{ answer.author.profile.avatar.url }}" alt="Avatar" class="answer-avatar">
+                    {% else %}
+                    <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="answer-avatar">
+                    {% endif %}
+                </a>
                 <div class="answer-voting">
                     <div class="voting-controls">
                         <button class="vote-btn vote-down">-</button>

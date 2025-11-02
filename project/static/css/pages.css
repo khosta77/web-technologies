@@ -144,6 +144,18 @@
     height: 60px;
     border-radius: 50%;
     object-fit: cover;
+    display: block;
+    transition: opacity 0.2s;
+}
+
+.question-left-column > a {
+    text-decoration: none;
+    display: inline-block;
+    line-height: 0;
+}
+
+.question-left-column > a:hover .question-avatar {
+    opacity: 0.8;
 }
 
 .question-content {
@@ -290,6 +302,18 @@
     height: 60px;
     border-radius: 50%;
     object-fit: cover;
+    display: block;
+    transition: opacity 0.2s;
+}
+
+.answer-left-column > a {
+    text-decoration: none;
+    display: inline-block;
+    line-height: 0;
+}
+
+.answer-left-column > a:hover .answer-avatar {
+    opacity: 0.8;
 }
 
 .answer-voting {
