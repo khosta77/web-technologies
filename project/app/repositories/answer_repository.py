@@ -17,6 +17,6 @@ class AnswerRepository(IAnswerRepository):
         """Получить все ответы на вопрос"""
         try:
             question = Question.objects.get(id=question_id)
-            return question.answers.all()
+            return question.answers.all().select_related("author", "author__profile")
         except Question.DoesNotExist:
             return Answer.objects.none()

@@ -15,7 +15,11 @@
         <div class="question-item">
             <!-- Левая колонка: аватар + голосование + ответы -->
             <div class="question-left-column">
+                {% if question.author.profile and question.author.profile.avatar %}
+                <img src="{{ question.author.profile.avatar.url }}" alt="Avatar" class="question-avatar">
+                {% else %}
                 <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="question-avatar">
+                {% endif %}
                 <div class="question-voting">
                     <div class="voting-controls">
                         <button class="vote-btn vote-down">-</button>

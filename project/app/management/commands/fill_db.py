@@ -15,9 +15,12 @@ Management command для наполнения базы данных тесто�
 from __future__ import annotations
 
 import random
+import shutil
 
 from datetime import timedelta
+from pathlib import Path
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -130,6 +133,27 @@ class Command(BaseCommand):
         # Создаем пользователей
         self.stdout.write(f"[ ] Создание {ratio} пользователей...")
         users_list = []
+
+        # Получаем список доступных аватаров из static/img/
+        static_img_dir = Path(settings.BASE_DIR) / "static" / "img"
+        available_avatars = [
+            f"img/{file.name}" for file in static_img_dir.glob("avatar*.jpg") if file.is_file()
+        ]
+
+        # Если нет доступных аватаров, используем дефолтный
+        if not available_avatars:
+            available_avatars = ["img/avatar.jpg"]
+
+        # Убеждаемся, что файлы доступны в uploads/img/ для корректной работы
+        uploads_img_dir = Path(settings.MEDIA_ROOT) / "img"
+        uploads_img_dir.mkdir(parents=True, exist_ok=True)
+
+        # Копируем файлы аватаров в uploads/img/ если их там нет
+        for avatar_file in static_img_dir.glob("avatar*.jpg"):
+            dest_file = uploads_img_dir / avatar_file.name
+            if not dest_file.exists():
+                shutil.copy2(avatar_file, dest_file)
+
         for i in range(ratio):
             username = fake.user_name() + str(i)  # Уникальный username
             email = fake.email()
@@ -141,10 +165,18 @@ class Command(BaseCommand):
             # Profile создается автоматически через сигналы
             # Проверяем, что профиль создан, если нет - создаем вручную
             if not hasattr(user, "profile"):
+                # Случайно выбираем аватар из доступных
+                random_avatar = random.choice(available_avatars)
                 Profile.objects.create(
                     user=user,
-                    avatar="img/avatar.jpg",  # Дефолтный аватар
+                    avatar=random_avatar,
                 )
+            else:
+                # Если профиль уже создан (через сигналы), обновляем аватар
+                random_avatar = random.choice(available_avatars)
+                user.profile.avatar = random_avatar
+                user.profile.save()
+
             users_list.append(user)
 
         self.stdout.write(self.style.SUCCESS(f"[X] Создано {len(users_list)} пользователей"))

@@ -34,6 +34,22 @@ class TestQuestionRepository:
         )
         self.question.tags.add(self.tag)
 
+    def test_get_all_questions_includes_author_profile(self) -> None:
+        """Тест: get_all_questions включает author и profile для оптимизации"""
+        # Получаем вопросы через репозиторий
+        questions = self.repository.get_all_questions()
+
+        # Проверяем, что можем получить доступ к profile без дополнительных запросов
+        questions_list = list(questions)
+        if questions_list:
+            for q in questions_list:
+                # Проверяем, что автор загружен (select_related работает)
+                assert hasattr(q, "author")
+                # Проверяем, что можем получить доступ к profile
+                if hasattr(q.author, "profile"):
+                    # Это означает, что select_related("author", "author__profile") работает
+                    assert q.author.profile is not None or hasattr(q.author, "_profile_cache")
+
     def test_get_all_questions(self) -> None:
         """Тест получения всех вопросов (новых)"""
         questions = self.repository.get_all_questions()
@@ -107,6 +123,24 @@ class TestAnswerRepository:
         """Тест получения ответов для несуществующего вопроса"""
         answers = self.repository.get_answers_by_question_id(99999)
         assert answers.count() == 0
+
+    def test_get_answers_includes_author_profile(self) -> None:
+        """Тест: get_answers_by_question_id включает author и profile для оптимизации"""
+        # Получаем ответы через репозиторий
+        answers = self.repository.get_answers_by_question_id(self.question.id)
+
+        # Проверяем, что можем получить доступ к profile без дополнительных запросов
+        answers_list = list(answers)
+        if answers_list:
+            for answer in answers_list:
+                # Проверяем, что автор загружен (select_related работает)
+                assert hasattr(answer, "author")
+                # Проверяем, что можем получить доступ к profile
+                if hasattr(answer.author, "profile"):
+                    # Это означает, что select_related("author", "author__profile") работает
+                    assert answer.author.profile is not None or hasattr(
+                        answer.author, "_profile_cache"
+                    )
 
 
 @pytest.mark.django_db

@@ -30,6 +30,29 @@ class ProfileModelTestCase(TestCase):
         rating = self.profile.get_rating()
         assert rating == 0  # Изначально рейтинг 0
 
+    def test_profile_with_custom_avatar(self):
+        """Тест: профиль с кастомным аватаром"""
+        # Устанавливаем кастомный аватар
+        self.profile.avatar = "img/avatar1.jpg"
+        self.profile.save()
+
+        assert self.profile.avatar.name == "img/avatar1.jpg"
+        assert self.profile.avatar.url.startswith("/media/")
+
+    def test_profile_avatar_url(self):
+        """Тест: правильный URL для аватара"""
+        user2 = User.objects.create_user(
+            username="testuser2", email="test2@example.com", password="testpass123"
+        )
+        profile2 = Profile.objects.get(user=user2)
+        profile2.avatar = "img/avatar2.jpg"
+        profile2.save()
+
+        # Проверяем, что URL формируется правильно
+        avatar_url = profile2.avatar.url
+        assert avatar_url.startswith("/media/")
+        assert "avatar2.jpg" in avatar_url
+
 
 class TagModelTestCase(TestCase):
     """Тесты для модели Tag"""
