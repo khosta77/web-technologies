@@ -14,6 +14,7 @@ class ProfileAdmin(admin.ModelAdmin):
     list_display = ["user", "avatar", "get_rating"]
     list_filter = ["user"]
     search_fields = ["user__username", "user__email"]
+    list_select_related = ["user"]
 
     def get_rating(self, obj: Profile) -> int:
         """Получить рейтинг пользователя"""
@@ -39,9 +40,13 @@ class QuestionAdmin(admin.ModelAdmin):
     search_fields = ["title", "text", "author__username"]
     filter_horizontal = ["tags"]
     readonly_fields = ["rating", "created_at"]
+    list_select_related = ["author", "author__profile"]
+    list_prefetch_related = ["tags", "answers"]
 
     def get_answers_count(self, obj: Question) -> int:
         """Получить количество ответов"""
+        if hasattr(obj, "_prefetched_objects_cache") and "answers" in obj._prefetched_objects_cache:
+            return len(obj._prefetched_objects_cache["answers"])
         return obj.get_answers_count()
 
     get_answers_count.short_description = "Количество ответов"  # type: ignore[attr-defined]
@@ -55,6 +60,7 @@ class AnswerAdmin(admin.ModelAdmin):
     list_filter = ["is_correct", "created_at", "rating"]
     search_fields = ["text", "question__title", "author__username"]
     readonly_fields = ["rating", "created_at"]
+    list_select_related = ["author", "author__profile", "question"]
 
 
 @admin.register(QuestionLike)
@@ -64,6 +70,7 @@ class QuestionLikeAdmin(admin.ModelAdmin):
     list_display = ["user", "question", "value", "question__rating"]
     list_filter = ["value"]
     search_fields = ["user__username", "question__title"]
+    list_select_related = ["user", "user__profile", "question"]
 
     def question__rating(self, obj: QuestionLike) -> int:
         """Получить рейтинг вопроса"""
@@ -80,6 +87,7 @@ class AnswerLikeAdmin(admin.ModelAdmin):
     list_display = ["user", "answer", "value", "answer__rating"]
     list_filter = ["value"]
     search_fields = ["user__username", "answer__text"]
+    list_select_related = ["user", "user__profile", "answer", "answer__question", "answer__author"]
 
     def answer__rating(self, obj: AnswerLike) -> int:
         """Получить рейтинг ответа"""

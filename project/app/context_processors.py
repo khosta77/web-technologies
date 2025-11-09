@@ -23,15 +23,19 @@ def user_context(request: HttpRequest) -> dict[str, Any]:
     if user_id:
         user = user_repository.get_user_by_id(user_id)
 
-    # Получаем лучших пользователей по рейтингу через репозиторий
-    best_members_dicts = user_repository.get_best_members(limit=5)
-    # Преобразуем словари обратно в объекты User для совместимости с шаблонами
-    best_members = []
-    for member_dict in best_members_dicts:
-        try:
-            user_obj = User.objects.get(id=member_dict["id"])
-            best_members.append(user_obj)
-        except User.DoesNotExist:
-            continue
+    path = request.path
+    skip_best_members = (
+        path in ["/login/", "/signup/", "/register/"]
+        or path.startswith(("/admin/", "/__debug__/"))  # Django Debug Toolbar
+    )
+
+    if skip_best_members:
+        best_members = []
+    else:
+        best_members = list(
+            User.objects.select_related("profile")
+            .filter(profile__isnull=False)
+            .order_by("-profile__rating", "-id")[:5]
+        )
 
     return {"user": user, "best_members": best_members}

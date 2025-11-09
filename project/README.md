@@ -153,7 +153,7 @@ poetry run python manage.py fill_db [ratio]
 
 Пример:
 ```bash
-poetry run python manage.py fill_db 100 # Стандартный набор данных
+poetry run python manage.py fill_db 100
 ```
 
 ## Инструменты качества кода

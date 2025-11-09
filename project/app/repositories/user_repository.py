@@ -8,11 +8,9 @@ from typing import Any
 
 from django.contrib.auth import authenticate as django_authenticate
 from django.contrib.auth.models import User
-from django.db.models import Sum, Value
-from django.db.models.functions import Coalesce
 
 from app.interfaces import IUserRepository
-from app.models import Answer, Question  # noqa: TC001
+from app.models import Answer, Question
 
 
 class UserRepository(IUserRepository):
@@ -23,9 +21,9 @@ class UserRepository(IUserRepository):
         return django_authenticate(username=username, password=password)
 
     def get_user_by_id(self, user_id: int) -> User | None:
-        """Получить пользователя по ID"""
+        """Получить пользователя по ID с оптимизацией запросов"""
         try:
-            return User.objects.get(id=user_id)
+            return User.objects.select_related("profile").get(id=user_id)
         except User.DoesNotExist:
             return None
 
@@ -37,36 +35,33 @@ class UserRepository(IUserRepository):
             return None
 
     def get_user_questions(self, user_id: int) -> list[dict[str, Any]]:
-        """Получить вопросы пользователя"""
+        """Получить вопросы пользователя с оптимизацией запросов"""
         try:
-            user = User.objects.get(id=user_id)
-            questions = user.questions.all()
+            questions = (
+                Question.objects.filter(author_id=user_id)
+                .select_related("author", "author__profile")
+                .prefetch_related("tags")
+            )
             return [self._question_to_dict(q) for q in questions]
         except User.DoesNotExist:
             return []
 
     def get_user_answers(self, user_id: int) -> list[dict[str, Any]]:
-        """Получить ответы пользователя"""
+        """Получить ответы пользователя с оптимизацией запросов"""
         try:
-            user = User.objects.get(id=user_id)
-            answers = user.answers.all()
+            answers = Answer.objects.filter(author_id=user_id).select_related(
+                "author", "author__profile", "question"
+            )
             return [self._answer_to_dict(a) for a in answers]
         except User.DoesNotExist:
             return []
 
     def get_best_members(self, limit: int = 5) -> list[dict[str, Any]]:
-        """Получить лучших пользователей по рейтингу"""
+        """Получить лучших пользователей по рейтингу с оптимизацией запросов"""
         best_members = (
-            User.objects.annotate(
-                question_rating=Coalesce(Sum("questions__likes__value"), Value(0)),
-                answer_rating=Coalesce(Sum("answers__likes__value"), Value(0)),
-            )
-            .annotate(
-                rating=Coalesce(Sum("questions__likes__value"), Value(0))
-                + Coalesce(Sum("answers__likes__value"), Value(0))
-            )
-            .order_by("-rating")
-            .filter(rating__gt=0)[:limit]
+            User.objects.select_related("profile")
+            .filter(profile__rating__gt=0)
+            .order_by("-profile__rating")[:limit]
         )
         return [self._user_to_dict(user) for user in best_members]
 
@@ -75,15 +70,23 @@ class UserRepository(IUserRepository):
         """Преобразовать модель User в словарь"""
         rating = 0
         if hasattr(user, "profile"):
-            rating = user.profile.get_rating()
+            rating = user.profile.rating
+
+        questions_count = getattr(user, "questions_count", None)
+        if questions_count is None:
+            questions_count = user.questions.count() if hasattr(user, "questions") else 0
+
+        answers_count = getattr(user, "answers_count", None)
+        if answers_count is None:
+            answers_count = user.answers.count() if hasattr(user, "answers") else 0
 
         return {
             "id": user.id,
             "username": user.username,
             "email": user.email,
             "rating": rating,
-            "questions_count": user.questions.count(),
-            "answers_count": user.answers.count(),
+            "questions_count": questions_count,
+            "answers_count": answers_count,
             "avatar": user.profile.avatar.name if hasattr(user, "profile") else "img/avatar.jpg",
         }
 
@@ -99,7 +102,12 @@ class UserRepository(IUserRepository):
             "rating": question.rating,
             "answers_count": question.get_answers_count(),
             "created_at": question.created_at,
-            "tags": [tag.name for tag in question.tags.all()],
+            "tags": (
+                [tag.name for tag in question._prefetched_objects_cache["tags"]]
+                if hasattr(question, "_prefetched_objects_cache")
+                and "tags" in question._prefetched_objects_cache
+                else [tag.name for tag in question.tags.all()]
+            ),
         }
 
     @staticmethod

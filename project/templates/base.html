@@ -111,7 +111,9 @@
                         <div class="members-list">
                             {% for member in best_members %}
                             <div class="member-item">
-                                <span class="member-rating">{{ member.rating }}</span>
+                                <span class="member-rating">
+                                    {% if member.profile %}{{ member.profile.rating }}{% else %}0{% endif %}
+                                </span>
                                 <a href="{% url 'profile' user_id=member.id %}">{{ member.username }}</a>
                             </div>
                             {% endfor %}

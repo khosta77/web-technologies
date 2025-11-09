@@ -47,7 +47,7 @@ class Profile(models.Model):
 
     def get_rating(self) -> int:
         """Получить рейтинг пользователя (денормализованное значение)"""
-        return self.rating
+        return int(self.rating)
 
     def update_rating(self) -> None:
         """Обновить рейтинг пользователя на основе лайков на вопросы и ответы"""

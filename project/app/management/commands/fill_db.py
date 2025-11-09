@@ -143,20 +143,18 @@ class Command(BaseCommand):
                 else:
                     # Если не удалось сгенерировать уникальный тег, используем хеш
                     base_word = fake.word().lower().replace(" ", "-")
-                    hash_suffix = hashlib.md5(f"{base_word}{i}{random.randint(0, 1000000)}".encode()).hexdigest()[:8]
+                    hash_suffix = hashlib.md5(
+                        f"{base_word}{i}{random.randint(0, 1000000)}".encode()
+                    ).hexdigest()[:8]
                     tag_name = f"{base_word}-{hash_suffix}"
 
             tag_names.add(tag_name)
             tags_to_create.append(Tag(name=tag_name))
 
-        # Создаем теги одним запросом
         tags_list = Tag.objects.bulk_create(tags_to_create)
 
-
-        # Создаем пользователей
         users_list = []
 
-        # Получаем список доступных аватаров из static/img/
         static_img_dir = Path(settings.BASE_DIR) / "static" / "img"
         available_avatar_files = list(static_img_dir.glob("avatar*.jpg"))
 
@@ -243,10 +241,12 @@ class Command(BaseCommand):
 
         # Создаем лайки на вопросы
         question_likes_count = ratio * 100
-        question_likes_to_create = []
+        question_likes_to_create: list[QuestionLike] = []
         question_likes_set = set()
 
-        with tqdm(total=question_likes_count, desc="Генерация лайков на вопросы", unit="лайк") as pbar:
+        with tqdm(
+            total=question_likes_count, desc="Генерация лайков на вопросы", unit="лайк"
+        ) as pbar:
             attempts = 0
             max_attempts = question_likes_count * 10
             while len(question_likes_to_create) < question_likes_count and attempts < max_attempts:
@@ -274,7 +274,7 @@ class Command(BaseCommand):
         # Создаем лайки на ответы
         answer_likes_count = ratio * 100
         answers = list(Answer.objects.all())
-        answer_likes_to_create = []
+        answer_likes_to_create: list[AnswerLike] = []
         answer_likes_set = set()
 
         with tqdm(total=answer_likes_count, desc="Генерация лайков на ответы", unit="лайк") as pbar:
@@ -297,8 +297,14 @@ class Command(BaseCommand):
         AnswerLike.objects.bulk_create(answer_likes_to_create)
 
         # Обновляем рейтинги ответов
-        for answer in  tqdm(Answer.objects.all(), desc="Обновление рейтингов ответов", unit="тег"):
+        for answer in tqdm(Answer.objects.all(), desc="Обновление рейтингов ответов", unit="тег"):
             answer.update_rating()
+
+        # Обновляем рейтинги профилей пользователей
+        for profile in tqdm(
+            Profile.objects.all(), desc="Обновление рейтингов профилей", unit="профиль"
+        ):
+            profile.update_rating()
 
         # Статистика
         self.stdout.write("\n" + "=" * 50)

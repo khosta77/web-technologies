@@ -10,6 +10,7 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
 from .constants import ANSWERS_PER_PAGE, QUESTIONS_PER_PAGE
+from .models import Answer, Question
 from .repositories import (
     AnswerRepository,
     QuestionRepository,
@@ -156,9 +157,17 @@ def settings(request: HttpRequest) -> HttpResponse:
 
         messages.success(request, "Профиль обновлён")
 
-    # Получаем вопросы и ответы пользователя
-    questions = user.questions.all()
-    answers = user.answers.all()
+    questions = (
+        Question.objects.filter(author=user)
+        .select_related("author", "author__profile")
+        .prefetch_related("tags")
+        .order_by("-created_at")
+    )
+    answers = (
+        Answer.objects.filter(author=user)
+        .select_related("author", "author__profile", "question")
+        .order_by("-created_at")
+    )
 
     return render(
         request,
@@ -178,9 +187,17 @@ def profile(request: HttpRequest, user_id: int) -> HttpResponse:
     if profile_user is None:
         raise Http404("User not found")
 
-    # Получаем вопросы и ответы пользователя
-    user_questions = profile_user.questions.all()
-    user_answers = profile_user.answers.all()
+    user_questions = (
+        Question.objects.filter(author=profile_user)
+        .select_related("author", "author__profile")
+        .prefetch_related("tags")
+        .order_by("-created_at")
+    )
+    user_answers = (
+        Answer.objects.filter(author=profile_user)
+        .select_related("author", "author__profile", "question")
+        .order_by("-created_at")
+    )
 
     return render(
         request,

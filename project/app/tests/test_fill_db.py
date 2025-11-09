@@ -41,43 +41,53 @@ class TestFillDbCommand:
             assert len(avatars_used) > 1, "Должны использоваться разные аватары"
 
     def test_fill_db_avatars_from_static_img(self) -> None:
-        """Тест: аватары выбираются из static/img/avatar*.jpg"""
+        """
+        Тест: аватары выбираются из static/img/avatar*.jpg
+        и сохраняются через Django Storage API.
+        """
         call_command("fill_db", 10)
 
         users = User.objects.filter(is_superuser=False)
-        static_img_dir = Path(settings.BASE_DIR) / "static" / "img"
-        available_avatars = [
-            f"img/{f.name}" for f in static_img_dir.glob("avatar*.jpg") if f.is_file()
-        ]
 
         # Проверяем, что все использованные аватары из списка доступных
         for user in users:
             if hasattr(user, "profile") and user.profile.avatar:
                 avatar_name = user.profile.avatar.name
-                # Проверяем, что аватар начинается с "img/" и имя файла соответствует шаблону
-                assert avatar_name.startswith("img/")
-                assert avatar_name in available_avatars or avatar_name == "img/avatar.jpg"
+                # Проверяем, что аватар сохраняется через Django Storage API (путь avatars/...)
+                assert avatar_name.startswith("avatars/"), (
+                    f"Аватар должен начинаться с 'avatars/', получен: {avatar_name}"
+                )
+                # Проверяем, что имя файла начинается с "avatar" и заканчивается на ".jpg"
+                # Django Storage API может добавлять суффикс к имени файла при конфликтах
+                avatar_filename = Path(avatar_name).name
+                assert avatar_filename.startswith("avatar") and avatar_filename.endswith(".jpg"), (
+                    f"Имя файла аватара должно начинаться с 'avatar' "
+                    f"и заканчиваться на '.jpg', получено: {avatar_filename}"
+                )
 
     def test_fill_db_copies_avatars_to_uploads(self) -> None:
-        """Тест: аватары копируются в uploads/img/"""
-        # Очищаем uploads/img/ перед тестом (только файлы аватаров)
-        uploads_img_dir = Path(settings.MEDIA_ROOT) / "img"
-        uploads_img_dir.mkdir(parents=True, exist_ok=True)
-        for file in uploads_img_dir.glob("avatar*.jpg"):
-            file.unlink()
-
+        """Тест: аватары сохраняются через Django Storage API в MEDIA_ROOT"""
         call_command("fill_db", 5)
 
-        # Проверяем, что файлы скопированы в uploads/img/
-        static_img_dir = Path(settings.BASE_DIR) / "static" / "img"
-        avatar_files = list(static_img_dir.glob("avatar*.jpg"))
+        users = User.objects.filter(is_superuser=False)
 
-        if avatar_files:
-            # Проверяем, что хотя бы один файл был скопирован
-            copied_count = sum(
-                1 for avatar_file in avatar_files if (uploads_img_dir / avatar_file.name).exists()
-            )
-            assert copied_count > 0, "Хотя бы один файл аватара должен быть скопирован"
+        # Проверяем, что аватары сохранены через Django Storage API
+        saved_count = 0
+        for user in users:
+            if hasattr(user, "profile") and user.profile.avatar:
+                avatar_path = user.profile.avatar.path
+                # Проверяем, что файл существует в MEDIA_ROOT
+                if Path(avatar_path).exists():
+                    saved_count += 1
+                    # Проверяем, что путь соответствует структуре avatars/год/месяц/user_id/
+                    assert "avatars" in avatar_path, (
+                        f"Путь аватара должен содержать 'avatars', получен: {avatar_path}"
+                    )
+                    assert str(user.id) in avatar_path, (
+                        f"Путь аватара должен содержать ID пользователя, получен: {avatar_path}"
+                    )
+
+        assert saved_count > 0, "Хотя бы один аватар должен быть сохранен через Django Storage API"
 
     def test_fill_db_uses_default_avatar_if_no_avatars_found(self) -> None:
         """Тест: используется дефолтный аватар если нет доступных файлов"""
