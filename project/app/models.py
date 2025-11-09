@@ -4,26 +4,38 @@
 
 from __future__ import annotations
 
-from django.contrib.auth.models import User
+from datetime import datetime
+
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.urls import reverse
-from django.utils import timezone
+
+
+def avatar_upload_to(instance: Profile, filename: str) -> str:
+    """Генерирует путь для сохранения аватара с временной и пользовательской частями"""
+    now = datetime.now()
+    user_id = instance.user.id
+    return f"avatars/{now.year}/{now.month:02d}/user_{user_id}/{filename}"
 
 
 class Profile(models.Model):
     """Профиль пользователя - расширение стандартной модели User"""
 
     user = models.OneToOneField(
-        User,
+        "auth.User",
         on_delete=models.CASCADE,
         related_name="profile",
         verbose_name="Пользователь",
     )
     avatar = models.ImageField(
-        upload_to="avatars/",
+        upload_to=avatar_upload_to,
         default="img/avatar.jpg",
         verbose_name="Аватар",
+    )
+    rating = models.IntegerField(
+        default=0,
+        verbose_name="Рейтинг",
+        help_text="Сумма лайков на вопросы и ответы пользователя",
     )
 
     class Meta:
@@ -34,7 +46,11 @@ class Profile(models.Model):
         return f"Profile of {self.user.username}"
 
     def get_rating(self) -> int:
-        """Получить рейтинг пользователя (сумма лайков на вопросы и ответы)"""
+        """Получить рейтинг пользователя (денормализованное значение)"""
+        return self.rating
+
+    def update_rating(self) -> None:
+        """Обновить рейтинг пользователя на основе лайков на вопросы и ответы"""
         # Используем строковые ссылки для избежания циклических импортов
         from django.db.models import Sum
 
@@ -50,7 +66,8 @@ class Profile(models.Model):
             ]
             or 0
         )
-        return question_likes + answer_likes
+        self.rating = question_likes + answer_likes
+        self.save(update_fields=["rating"])
 
 
 class Tag(models.Model):
@@ -87,15 +104,15 @@ class Question(models.Model):
     """Вопрос"""
 
     title = models.CharField(max_length=255, verbose_name="Заголовок")
-    text = models.TextField(verbose_name="Текст вопроса")
+    text = models.CharField(max_length=4096, verbose_name="Текст вопроса")
     author = models.ForeignKey(
-        User,
+        "auth.User",
         on_delete=models.CASCADE,
         related_name="questions",
         verbose_name="Автор",
     )
     created_at = models.DateTimeField(
-        default=timezone.now,
+        auto_now_add=True,
         verbose_name="Дата создания",
     )
     rating = models.IntegerField(default=0, verbose_name="Рейтинг")
@@ -135,7 +152,7 @@ class Answer(models.Model):
 
     text = models.TextField(verbose_name="Текст ответа")
     author = models.ForeignKey(
-        User,
+        "auth.User",
         on_delete=models.CASCADE,
         related_name="answers",
         verbose_name="Автор",
@@ -147,7 +164,7 @@ class Answer(models.Model):
         verbose_name="Вопрос",
     )
     created_at = models.DateTimeField(
-        default=timezone.now,
+        auto_now_add=True,
         verbose_name="Дата создания",
     )
     is_correct = models.BooleanField(
@@ -178,7 +195,7 @@ class QuestionLike(models.Model):
     """Лайк (оценка) вопроса"""
 
     user = models.ForeignKey(
-        User,
+        "auth.User",
         on_delete=models.CASCADE,
         related_name="question_likes",
         verbose_name="Пользователь",
@@ -205,14 +222,21 @@ class QuestionLike(models.Model):
         return f"{self.user.username} -> {self.question.title[:50]} ({self.value})"
 
     def save(self, *args: object, **kwargs: object) -> None:
-        """Переопределяем save для обновления рейтинга вопроса"""
+        """Переопределяем save для обновления рейтинга вопроса и профиля автора"""
         super().save(*args, **kwargs)
         self.question.update_rating()
+        # Обновляем рейтинг профиля автора вопроса
+        # В продакшене это должно выполняться через celery-таску
+        self.question.author.profile.update_rating()
 
     def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
-        """Переопределяем delete для обновления рейтинга вопроса"""
+        """Переопределяем delete для обновления рейтинга вопроса и профиля автора"""
+        author = self.question.author
         result: tuple[int, dict[str, int]] = super().delete(*args, **kwargs)
         self.question.update_rating()
+        # Обновляем рейтинг профиля автора вопроса
+        # В продакшене это должно выполняться через celery-таску
+        author.profile.update_rating()
         return result
 
 
@@ -220,7 +244,7 @@ class AnswerLike(models.Model):
     """Лайк (оценка) ответа"""
 
     user = models.ForeignKey(
-        User,
+        "auth.User",
         on_delete=models.CASCADE,
         related_name="answer_likes",
         verbose_name="Пользователь",
@@ -247,12 +271,19 @@ class AnswerLike(models.Model):
         return f"{self.user.username} -> Answer {self.answer.id} ({self.value})"
 
     def save(self, *args: object, **kwargs: object) -> None:
-        """Переопределяем save для обновления рейтинга ответа"""
+        """Переопределяем save для обновления рейтинга ответа и профиля автора"""
         super().save(*args, **kwargs)
         self.answer.update_rating()
+        # Обновляем рейтинг профиля автора ответа
+        # В продакшене это должно выполняться через celery-таску
+        self.answer.author.profile.update_rating()
 
     def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
-        """Переопределяем delete для обновления рейтинга ответа"""
+        """Переопределяем delete для обновления рейтинга ответа и профиля автора"""
+        author = self.answer.author
         result: tuple[int, dict[str, int]] = super().delete(*args, **kwargs)
         self.answer.update_rating()
+        # Обновляем рейтинг профиля автора ответа
+        # В продакшене это должно выполняться через celery-таску
+        author.profile.update_rating()
         return result

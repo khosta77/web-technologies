@@ -119,7 +119,7 @@ project/
 
 ```bash
 cd project
-poetry install                    # Установка зависимостей
+poetry install
 poetry run python manage.py runserver 8000
 ```
 
