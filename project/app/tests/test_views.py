@@ -32,24 +32,45 @@ class ViewsTestCase(TestCase):
         response = self.client.get("/")
 
         assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert "TemplateSyntaxError" not in content
+        assert "DoesNotExist" not in content
+        assert "AttributeError" not in content
+        assert "Exception" not in content
 
     def test_hot_status_code(self):
         """Тест статуса страницы горячих вопросов"""
         response = self.client.get("/hot/")
 
         assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert "TemplateSyntaxError" not in content
+        assert "DoesNotExist" not in content
+        assert "AttributeError" not in content
+        assert "Exception" not in content
 
     def test_tags_status_code(self):
         """Тест статуса страницы тегов"""
         response = self.client.get("/tags/")
 
         assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert "TemplateSyntaxError" not in content
+        assert "DoesNotExist" not in content
+        assert "AttributeError" not in content
+        assert "Exception" not in content
 
     def test_question_status_code(self):
         """Тест статуса страницы вопроса"""
         response = self.client.get(f"/question/{self.question.id}/")
 
         assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert "TemplateSyntaxError" not in content
+        assert "DoesNotExist" not in content
+        assert "AttributeError" not in content
+        assert "Exception" not in content
+        assert "Test Question" in content
 
     def test_question_not_found(self):
         """Тест несуществующего вопроса"""
@@ -69,12 +90,22 @@ class ViewsTestCase(TestCase):
         response = self.client.get("/login/")
 
         assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert "TemplateSyntaxError" not in content
+        assert "DoesNotExist" not in content
+        assert "AttributeError" not in content
+        assert "Exception" not in content
 
     def test_signup_page_status_code(self):
         """Тест статуса страницы регистрации"""
         response = self.client.get("/register/")
 
         assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert "TemplateSyntaxError" not in content
+        assert "DoesNotExist" not in content
+        assert "AttributeError" not in content
+        assert "Exception" not in content
 
     def test_login_success(self):
         """Тест успешного входа"""
