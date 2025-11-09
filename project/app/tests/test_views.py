@@ -2,9 +2,12 @@
 Тесты для views
 """
 
+from __future__ import annotations
+
+from django.contrib.auth.models import User
 from django.test import Client, TestCase
 
-from app.mockRepositories import UserMockRepository
+from app.models import Answer, Question, Tag
 
 
 class ViewsTestCase(TestCase):
@@ -13,39 +16,68 @@ class ViewsTestCase(TestCase):
     def setUp(self):
         """Инициализация перед каждым тестом"""
         self.client = Client()
-        self.repository = UserMockRepository()
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass123"
+        )
+        self.tag = Tag.objects.create(name="python")
+        self.question = Question.objects.create(
+            title="Test Question",
+            text="Test question text",
+            author=self.user,
+        )
+        self.question.tags.add(self.tag)
 
     def test_index_status_code(self):
         """Тест статуса главной страницы"""
         response = self.client.get("/")
 
         assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert "TemplateSyntaxError" not in content
+        assert "DoesNotExist" not in content
+        assert "AttributeError" not in content
+        assert "Exception" not in content
 
     def test_hot_status_code(self):
         """Тест статуса страницы горячих вопросов"""
         response = self.client.get("/hot/")
 
         assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert "TemplateSyntaxError" not in content
+        assert "DoesNotExist" not in content
+        assert "AttributeError" not in content
+        assert "Exception" not in content
 
     def test_tags_status_code(self):
         """Тест статуса страницы тегов"""
         response = self.client.get("/tags/")
 
         assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert "TemplateSyntaxError" not in content
+        assert "DoesNotExist" not in content
+        assert "AttributeError" not in content
+        assert "Exception" not in content
 
     def test_question_status_code(self):
         """Тест статуса страницы вопроса"""
-        response = self.client.get("/question/1/")
+        response = self.client.get(f"/question/{self.question.id}/")
 
         assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert "TemplateSyntaxError" not in content
+        assert "DoesNotExist" not in content
+        assert "AttributeError" not in content
+        assert "Exception" not in content
+        assert "Test Question" in content
 
     def test_question_not_found(self):
         """Тест несуществующего вопроса"""
         response = self.client.get("/question/99999/")
 
-        # В текущей реализации возвращается 200 с пустым контекстом
-        # или может быть 404/302 - проверяем что не возникает ошибки
-        assert response.status_code in [200, 404, 302]
+        # Должен быть 404
+        assert response.status_code == 404
 
     def test_tag_page_status_code(self):
         """Тест статуса страницы с вопросами по тегу"""
@@ -58,24 +90,34 @@ class ViewsTestCase(TestCase):
         response = self.client.get("/login/")
 
         assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert "TemplateSyntaxError" not in content
+        assert "DoesNotExist" not in content
+        assert "AttributeError" not in content
+        assert "Exception" not in content
 
     def test_signup_page_status_code(self):
         """Тест статуса страницы регистрации"""
         response = self.client.get("/register/")
 
         assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert "TemplateSyntaxError" not in content
+        assert "DoesNotExist" not in content
+        assert "AttributeError" not in content
+        assert "Exception" not in content
 
     def test_login_success(self):
         """Тест успешного входа"""
-        response = self.client.post("/login/", {"username": "python_dev", "password": "12345"})
+        response = self.client.post("/login/", {"username": "testuser", "password": "testpass123"})
 
         # После успешного входа должен быть редирект
-        assert response.status_code in [302, 200]
+        assert response.status_code == 302
 
     def test_login_failure(self):
         """Тест неудачного входа"""
         response = self.client.post(
-            "/login/", {"username": "python_dev", "password": "wrong_password"}
+            "/login/", {"username": "testuser", "password": "wrong_password"}
         )
 
         # При неудачном входе должна вернуться форма
@@ -84,7 +126,7 @@ class ViewsTestCase(TestCase):
     def test_logout_redirect(self):
         """Тест выхода из системы"""
         # Сначала логинимся
-        self.client.post("/login/", {"username": "python_dev", "password": "12345"})
+        self.client.post("/login/", {"username": "testuser", "password": "testpass123"})
 
         # Затем выходим
         response = self.client.get("/logout/")
@@ -109,7 +151,7 @@ class ViewsTestCase(TestCase):
     def test_settings_page_with_login(self):
         """Тест страницы settings с логином"""
         # Логинимся
-        self.client.post("/login/", {"username": "python_dev", "password": "12345"})
+        self.client.post("/login/", {"username": "testuser", "password": "testpass123"})
 
         response = self.client.get("/settings/")
 
@@ -118,7 +160,7 @@ class ViewsTestCase(TestCase):
 
     def test_profile_page(self):
         """Тест страницы профиля"""
-        response = self.client.get("/profile/1/")
+        response = self.client.get(f"/profile/{self.user.id}/")
 
         assert response.status_code == 200
 
@@ -126,5 +168,50 @@ class ViewsTestCase(TestCase):
         """Тест несуществующего профиля"""
         response = self.client.get("/profile/99999/")
 
-        # Должен быть редирект или 404
-        assert response.status_code in [302, 404]
+        # Должен быть 404
+        assert response.status_code == 404
+
+    def test_question_page_with_answers(self):
+        """Тест страницы вопроса с ответами"""
+        Answer.objects.create(text="Test answer", author=self.user, question=self.question)
+
+        response = self.client.get(f"/question/{self.question.id}/")
+
+        assert response.status_code == 200
+        assert "Test answer" in response.content.decode()
+
+    def test_hot_questions_sorted_by_rating(self):
+        """Тест сортировки горячих вопросов"""
+        Question.objects.create(
+            title="Hot Question",
+            text="Hot text",
+            author=self.user,
+            rating=10,
+        )
+
+        response = self.client.get("/hot/")
+        assert response.status_code == 200
+
+        # Проверяем, что вопрос с большим рейтингом первым
+        content = response.content.decode()
+        hot_index = content.find("Hot Question")
+        test_index = content.find("Test Question")
+        if hot_index != -1 and test_index != -1:
+            assert hot_index < test_index
+
+    def test_tag_filter_questions(self):
+        """Тест фильтрации вопросов по тегу"""
+        tag2 = Tag.objects.create(name="django")
+        question2 = Question.objects.create(
+            title="Django Question",
+            text="Django text",
+            author=self.user,
+        )
+        question2.tags.add(tag2)
+
+        response = self.client.get("/tag/python/")
+        assert response.status_code == 200
+
+        content = response.content.decode()
+        assert "Test Question" in content
+        assert "Django Question" not in content

@@ -12,7 +12,7 @@ class IUserRepository(ABC):
     """Интерфейс для получения данных о пользователях"""
 
     @abstractmethod
-    def authenticate(self, username: str, password: str) -> dict[str, Any] | None:
+    def authenticate(self, username: str, password: str) -> Any:
         """
         Аутентифицировать пользователя
 
@@ -21,11 +21,11 @@ class IUserRepository(ABC):
             password (str): Пароль
 
         Returns:
-            dict: Данные пользователя или None
+            User или dict: Объект пользователя или словарь с данными, или None
         """
 
     @abstractmethod
-    def get_user_by_id(self, user_id: int) -> dict[str, Any] | None:
+    def get_user_by_id(self, user_id: int) -> Any:
         """
         Получить пользователя по ID
 
@@ -33,11 +33,11 @@ class IUserRepository(ABC):
             user_id (int): ID пользователя
 
         Returns:
-            dict: Данные пользователя
+            User или dict: Объект пользователя или словарь с данными, или None
         """
 
     @abstractmethod
-    def get_user_by_username(self, username: str) -> dict[str, Any] | None:
+    def get_user_by_username(self, username: str) -> Any:
         """
         Получить пользователя по username
 
@@ -45,7 +45,7 @@ class IUserRepository(ABC):
             username (str): Имя пользователя
 
         Returns:
-            dict: Данные пользователя
+            User или dict: Объект пользователя или словарь с данными, или None
         """
 
     @abstractmethod

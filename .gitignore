@@ -9,6 +9,7 @@ Thumbs.db
 # Static files (if using collectstatic)
 staticfiles/
 media/
+uploads/
 
 # Файлы CMAKE
 build/*

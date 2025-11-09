@@ -7,30 +7,32 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any
 
+from django.db.models import QuerySet
+
 
 class IQuestionRepository(ABC):
     """Интерфейс для получения данных о вопросах"""
 
     @abstractmethod
-    def get_all_questions(self) -> list[dict[str, Any]]:
+    def get_all_questions(self) -> QuerySet | list[dict[str, Any]]:
         """
         Получить все вопросы
 
         Returns:
-            list: Список всех вопросов
+            QuerySet или list: Список всех вопросов
         """
 
     @abstractmethod
-    def get_hot_questions(self) -> list[dict[str, Any]]:
+    def get_hot_questions(self) -> QuerySet | list[dict[str, Any]]:
         """
         Получить популярные вопросы (отсортированные по рейтингу)
 
         Returns:
-            list: Список популярных вопросов
+            QuerySet или list: Список популярных вопросов
         """
 
     @abstractmethod
-    def get_questions_by_tag(self, tag_name: str) -> list[dict[str, Any]]:
+    def get_questions_by_tag(self, tag_name: str) -> QuerySet | list[dict[str, Any]]:
         """
         Получить вопросы по тегу
 
@@ -38,11 +40,11 @@ class IQuestionRepository(ABC):
             tag_name (str): Название тега
 
         Returns:
-            list: Список вопросов по тегу
+            QuerySet или list: Список вопросов по тегу
         """
 
     @abstractmethod
-    def get_question_by_id(self, question_id: int) -> dict[str, Any]:
+    def get_question_by_id(self, question_id: int) -> Any:
         """
         Получить вопрос по ID
 
@@ -50,5 +52,5 @@ class IQuestionRepository(ABC):
             question_id (int): ID вопроса
 
         Returns:
-            dict: Данные вопроса
+            Объект Question или dict: Данные вопроса
         """

@@ -15,7 +15,13 @@
         <div class="question-item">
             <!-- Левая колонка: аватар + голосование + ответы -->
             <div class="question-left-column">
-                <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="question-avatar">
+                <a href="{% url 'profile' user_id=question.author.id %}">
+                    {% if question.author.profile and question.author.profile.avatar %}
+                    <img src="{{ question.author.profile.avatar.url }}" alt="Avatar" class="question-avatar">
+                    {% else %}
+                    <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="question-avatar">
+                    {% endif %}
+                </a>
                 <div class="question-voting">
                     <div class="voting-controls">
                         <button class="vote-btn vote-down">-</button>
@@ -24,7 +30,7 @@
                     </div>
                 </div>
                 <div class="question-meta">
-                    <a href="{% url 'question' question_id=question.id %}#answers" class="answers-count">answer ({{ question.answers_count }})</a>
+                    <a href="{% url 'question' question_id=question.id %}#answers" class="answers-count">answer ({{ question.get_answers_count }})</a>
                 </div>
             </div>
             
@@ -35,8 +41,8 @@
                 </h2>
                 <div class="question-tags">
                     <span>Tags:</span>
-                    {% for tag in question.tags %}
-                    <a href="{% url 'tag' tag_name=tag %}" class="tag">{{ tag }}</a>
+                    {% for tag in question.tags.all %}
+                    <a href="{% url 'tag' tag_name=tag.name %}" class="tag">{{ tag.name }}</a>
                     {% endfor %}
                 </div>
                 <p class="question-text">

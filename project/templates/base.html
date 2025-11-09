@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}AskPupkin{% endblock %}</title>
     {% load static %}
+    <link rel="icon" type="image/png" href="{% static 'img/favico.png' %}">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/layout.css' %}">
     <link rel="stylesheet" href="{% static 'css/components.css' %}">
@@ -25,7 +26,7 @@
                     <div class="search-input-container">
                         <img src="{% static 'img/search.jpg' %}" alt="Search" class="search-icon">
                         <input type="text" placeholder="Поиск..." class="search-input-field" id="searchInputField">
-                    </div>
+                </div>
                 </div>
                 
                 <div class="user-block">
@@ -33,11 +34,23 @@
                     
                     {% if user %}
                     <div class="user-dropdown" id="userDropdown">
-                        <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="user-avatar" id="avatarBtn">
+                        <a href="{% url 'profile' user_id=user.id %}" class="avatar-link">
+                            {% if user.profile and user.profile.avatar %}
+                            <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="user-avatar" id="avatarBtn">
+                            {% else %}
+                            <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="user-avatar" id="avatarBtn">
+                            {% endif %}
+                        </a>
                         <div class="dropdown-menu" id="dropdownMenu">
                             <div class="dropdown-header">
-                                <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="dropdown-avatar">
-                                <span class="dropdown-username">{{ user.username }}</span>
+                                <a href="{% url 'profile' user_id=user.id %}" class="dropdown-header-link">
+                                    {% if user.profile and user.profile.avatar %}
+                                    <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="dropdown-avatar">
+                                    {% else %}
+                                    <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="dropdown-avatar">
+                                    {% endif %}
+                                    <span class="dropdown-username">{{ user.username }}</span>
+                                </a>
                             </div>
                             <div class="dropdown-divider"></div>
                             <a href="{% url 'settings' %}" class="dropdown-item">settings</a>
@@ -78,7 +91,7 @@
                 <aside class="right-column">
                     <div class="sidebar-block">
                         <div class="sidebar-header">
-                            <h3>Popular Tags</h3>
+                        <h3>Popular Tags</h3>
                             <h3><a href="{% url 'hot' %}" class="hot-questions-link">Hot Questions</a></h3>
                         </div>
                         <div class="tags-list">
@@ -98,7 +111,9 @@
                         <div class="members-list">
                             {% for member in best_members %}
                             <div class="member-item">
-                                <span class="member-rating">{{ member.rating }}</span>
+                                <span class="member-rating">
+                                    {% if member.profile %}{{ member.profile.rating }}{% else %}0{% endif %}
+                                </span>
                                 <a href="{% url 'profile' user_id=member.id %}">{{ member.username }}</a>
                             </div>
                             {% endfor %}

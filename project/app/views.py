@@ -1,33 +1,37 @@
+"""
+Views для приложения AskPupkin
+"""
+
 from __future__ import annotations
 
-from typing import Any
-
 from django.contrib import messages
+from django.contrib.auth.models import User
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
 from .constants import ANSWERS_PER_PAGE, QUESTIONS_PER_PAGE
-from .mockRepositories import (
-    AnswerMockRepository,
-    QuestionMockRepository,
-    TagMockRepository,
-    UserMockRepository,
+from .models import Answer, Question
+from .repositories import (
+    AnswerRepository,
+    QuestionRepository,
+    TagRepository,
+    UserRepository,
 )
 from .utils import paginate
 
 
-# Инициализация репозиториев
-question_repository = QuestionMockRepository()
-answer_repository = AnswerMockRepository()
-tag_repository = TagMockRepository()
-user_repository = UserMockRepository()
+# Создаем экземпляры репозиториев
+question_repository = QuestionRepository()
+answer_repository = AnswerRepository()
+tag_repository = TagRepository()
+user_repository = UserRepository()
 
 
-def get_authenticated_user(request: HttpRequest) -> dict[str, Any] | None:
+def get_authenticated_user(request: HttpRequest) -> User | None:
     """Получить текущего авторизованного пользователя"""
     user_id = request.session.get("user_id")
     if user_id:
-        return user_repository.get_user_by_id(user_id)  # type: ignore[no-any-return]
+        return user_repository.get_user_by_id(user_id)
     return None
 
 
@@ -50,12 +54,10 @@ def hot(request: HttpRequest) -> HttpResponse:
 def question(request: HttpRequest, question_id: int) -> HttpResponse:
     """Страница одного вопроса"""
     question_obj = question_repository.get_question_by_id(question_id)
-    if not question_obj:
-        raise Http404("Вопрос не найден")
-
+    if question_obj is None:
+        raise Http404("Question not found")
     answers = answer_repository.get_answers_by_question_id(question_id)
     user = get_authenticated_user(request)
-
     page = paginate(answers, request, per_page=ANSWERS_PER_PAGE)
     return render(
         request,
@@ -91,7 +93,7 @@ def login_view(request: HttpRequest) -> HttpResponse:
 
         user = user_repository.authenticate(username, password)
         if user:
-            request.session["user_id"] = user["id"]
+            request.session["user_id"] = user.id
             messages.success(request, f"Добро пожаловать, {username}!")
             next_url = request.GET.get("next", "/")
             return redirect(next_url)
@@ -128,7 +130,6 @@ def settings(request: HttpRequest) -> HttpResponse:
         return redirect("login")
 
     if request.method == "POST":
-        # Обновляем данные пользователя
         username = request.POST.get("username")
         email = request.POST.get("email")
         current_password = request.POST.get("current_password")
@@ -137,28 +138,36 @@ def settings(request: HttpRequest) -> HttpResponse:
 
         # Обновляем username и email
         if username:
-            user["username"] = username
+            user.username = username
         if email:
-            user["email"] = email
+            user.email = email
+        user.save()
 
         # Обработка смены пароля
         if current_password and new_password and confirm_password:
-            # Проверяем текущий пароль
-            if user.get("password") == current_password:
+            if user.check_password(current_password):
                 if new_password == confirm_password:
-                    user["password"] = new_password
+                    user.set_password(new_password)
+                    user.save()
                     messages.success(request, "Пароль успешно изменён")
                 else:
                     messages.error(request, "Новые пароли не совпадают")
             else:
                 messages.error(request, "Неверный текущий пароль")
 
-        # В реальном приложении здесь будет сохранение в БД
         messages.success(request, "Профиль обновлён")
 
-    # Получаем вопросы и ответы пользователя
-    questions = user_repository.get_user_questions(user["id"])
-    answers = user_repository.get_user_answers(user["id"])
+    questions = (
+        Question.objects.filter(author=user)
+        .select_related("author", "author__profile")
+        .prefetch_related("tags")
+        .order_by("-created_at")
+    )
+    answers = (
+        Answer.objects.filter(author=user)
+        .select_related("author", "author__profile", "question")
+        .order_by("-created_at")
+    )
 
     return render(
         request,
@@ -175,13 +184,20 @@ def profile(request: HttpRequest, user_id: int) -> HttpResponse:
     """Страница профиля пользователя"""
     user = get_authenticated_user(request)
     profile_user = user_repository.get_user_by_id(user_id)
+    if profile_user is None:
+        raise Http404("User not found")
 
-    if not profile_user:
-        raise Http404("Пользователь не найден")
-
-    # Получаем вопросы и ответы пользователя
-    user_questions = user_repository.get_user_questions(user_id)
-    user_answers = user_repository.get_user_answers(user_id)
+    user_questions = (
+        Question.objects.filter(author=profile_user)
+        .select_related("author", "author__profile")
+        .prefetch_related("tags")
+        .order_by("-created_at")
+    )
+    user_answers = (
+        Answer.objects.filter(author=profile_user)
+        .select_related("author", "author__profile", "question")
+        .order_by("-created_at")
+    )
 
     return render(
         request,
