@@ -35,7 +35,8 @@ project/
 │   ├── middleware.py        # Custom middleware
 │   ├── management/         # Management команды
 │   │   └── commands/
-│   │       └── fill_db.py   # Команда для наполнения БД
+│   │       ├── fill_db.py   # Команда для наполнения БД
+│   │       └── drop_absolute.py  # Команда для полной очистки БД
 │   ├── migrations/          # Миграции БД
 │   └── tests/               # Тесты
 ├── askpupkin/               # Конфигурация Django проекта
@@ -155,6 +156,35 @@ poetry run python manage.py fill_db [ratio]
 ```bash
 poetry run python manage.py fill_db 100
 ```
+
+# Удалить после сдачи ДЗ4.
+
+### Полная очистка базы данных
+
+Для полной очистки базы данных и миграций используйте команду:
+
+```bash
+poetry run python manage.py drop_absolute
+```
+
+**⚠️ ВНИМАНИЕ:** Эта команда полностью удалит:
+- Все данные из базы данных
+- Все файлы миграций (кроме `__init__.py`)
+- Файл базы данных (если используется SQLite)
+- Записи о миграциях в таблице `django_migrations`
+
+Команда запросит подтверждение перед выполнением. Для выполнения без подтверждения используйте флаг `--force`:
+
+```bash
+poetry run python manage.py drop_absolute --force
+```
+
+**Используйте только в режиме разработки!**
+
+После выполнения команды необходимо:
+1. Создать новые миграции: `poetry run python manage.py makemigrations`
+2. Применить миграции: `poetry run python manage.py migrate`
+3. (Опционально) Заполнить БД: `poetry run python manage.py fill_db`
 
 ## Инструменты качества кода
 
