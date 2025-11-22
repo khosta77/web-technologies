@@ -29,7 +29,6 @@ project/
 │   ├── urls.py              # URL маршруты
 │   ├── models.py            # Django модели
 │   ├── admin.py             # Админ-панель
-│   ├── signals.py           # Django сигналы
 │   ├── context_processors.py # Context processors
 │   ├── handlers.py          # Обработчики ошибок (404, 500)
 │   ├── middleware.py        # Custom middleware

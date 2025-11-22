@@ -116,9 +116,7 @@ class Command(BaseCommand):
                         cursor.execute(f'DROP TABLE IF EXISTS "{table}" CASCADE')
                         self.stdout.write(f"   Удалена таблица: {table}")
                     except Exception as e:
-                        self.stdout.write(
-                            self.style.WARNING(f"   Не удалось удалить {table}: {e}")
-                        )
+                        self.stdout.write(self.style.WARNING(f"   Не удалось удалить {table}: {e}"))
             elif connection.vendor == "sqlite":
                 # Для SQLite отключаем проверки внешних ключей
                 cursor.execute("PRAGMA foreign_keys = OFF")
@@ -128,9 +126,7 @@ class Command(BaseCommand):
                         cursor.execute(f'DROP TABLE IF EXISTS "{table}"')
                         self.stdout.write(f"   Удалена таблица: {table}")
                     except Exception as e:
-                        self.stdout.write(
-                            self.style.WARNING(f"   Не удалось удалить {table}: {e}")
-                        )
+                        self.stdout.write(self.style.WARNING(f"   Не удалось удалить {table}: {e}"))
                 cursor.execute("PRAGMA foreign_keys = ON")
 
             # Удаляем оставшиеся последовательности (для PostgreSQL)

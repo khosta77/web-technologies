@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import hashlib
 import random
+import time
 
 from datetime import timedelta
 from pathlib import Path
@@ -24,6 +25,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.files import File
 from django.core.management.base import BaseCommand
+from django.db import connection, transaction
 from django.utils import timezone
 from faker import Faker
 from tqdm import tqdm
@@ -52,6 +54,7 @@ class Command(BaseCommand):
             )
 
     def handle(self, *args: object, **options: dict[str, object]) -> None:
+        start_time = time.perf_counter()
         ratio_value = options.get("ratio", 100)
         ratio: int = int(ratio_value) if isinstance(ratio_value, (int, str)) else 100
 
@@ -164,28 +167,64 @@ class Command(BaseCommand):
             if default_avatar.exists():
                 available_avatar_files = [default_avatar]
 
-        for i in tqdm(range(ratio), desc="Создание пользователей", unit="пользователь"):
-            username = fake.user_name() + str(i)  # Уникальный username
-            email = fake.email()
-            user = User.objects.create_user(
-                username=username,
-                email=email,
-                password="12345",  # Простой пароль для тестирования
-            )
-            # Profile создается автоматически через сигналы
-            profile = user.profile
+        # Размер пакета для bulk_create
+        batch_size = 500
+        # Хешируем пароль один раз для всех пользователей
+        from django.contrib.auth.hashers import make_password
 
-            # Сохраняем аватар через Django Storage API
-            if available_avatar_files:
-                avatar_file_path = random.choice(available_avatar_files)
-                with open(avatar_file_path, "rb") as f:
-                    profile.avatar.save(avatar_file_path.name, File(f), save=False)
-                profile.save()
-            else:
-                # Если нет доступных аватаров, профиль уже имеет дефолтный
-                profile.save()
+        hashed_password = make_password("12345")
 
-            users_list.append(user)
+        # Создаем пользователей пакетами
+        for batch_start in tqdm(
+            range(0, ratio, batch_size), desc="Создание пользователей", unit="пакет"
+        ):
+            batch_end = min(batch_start + batch_size, ratio)
+            users_to_create = []
+            profiles_to_create = []
+
+            with transaction.atomic():
+                # Создаем пользователей для текущего пакета
+                for i in range(batch_start, batch_end):
+                    username = fake.user_name() + str(i)  # Уникальный username
+                    email = fake.email()
+                    user = User(
+                        username=username,
+                        email=email,
+                        password=hashed_password,  # Используем предварительно хешированный пароль
+                        is_active=True,
+                    )
+                    users_to_create.append(user)
+
+                # Создаем пользователей одним запросом
+                created_users = User.objects.bulk_create(users_to_create)
+
+                # Создаем профили для созданных пользователей
+                for user in created_users:
+                    profile = Profile(user=user, rating=0)
+                    profiles_to_create.append(profile)
+
+                # Создаем профили одним запросом
+                Profile.objects.bulk_create(profiles_to_create)
+
+                # Обновляем аватары для всех пользователей
+                if available_avatar_files:
+                    # Загружаем профили из БД после bulk_create, чтобы получить связи
+                    user_ids = [user.id for user in created_users]
+                    profiles = Profile.objects.filter(user_id__in=user_ids).select_related("user")
+                    # Создаем словарь для быстрого доступа
+                    profile_dict = {profile.user_id: profile for profile in profiles}
+
+                    for user in tqdm(
+                        created_users, desc="Сохранение аватаров", unit="аватар", leave=False
+                    ):
+                        profile = profile_dict.get(user.id)
+                        if profile:
+                            avatar_file_path = random.choice(available_avatar_files)
+                            with open(avatar_file_path, "rb") as f:
+                                profile.avatar.save(avatar_file_path.name, File(f), save=False)
+                            profile.save(update_fields=["avatar"])
+
+                users_list.extend(created_users)
 
         # Создаем вопросы
         questions_count = ratio * 10
@@ -208,10 +247,19 @@ class Command(BaseCommand):
         # Создаем вопросы одним запросом
         questions_list = Question.objects.bulk_create(questions_to_create)
 
-        # Добавляем теги к вопросам
+        # Добавляем теги к вопросам пакетно через through модель
+        question_tag_relations = []
         for question in tqdm(questions_list, desc="Добавление тегов к вопросам", unit="вопрос"):
             num_tags = random.randint(1, 3)
-            question.tags.add(*random.sample(tags_list, min(num_tags, len(tags_list))))
+            selected_tags = random.sample(tags_list, min(num_tags, len(tags_list)))
+            for tag in selected_tags:
+                question_tag_relations.append(
+                    Question.tags.through(question_id=question.id, tag_id=tag.id)
+                )
+
+        # Создаем связи пакетно
+        if question_tag_relations:
+            Question.tags.through.objects.bulk_create(question_tag_relations, ignore_conflicts=True)
 
         # Создаем ответы
         answers_count = ratio * 100
@@ -267,9 +315,30 @@ class Command(BaseCommand):
         # Создаем лайки одним запросом
         QuestionLike.objects.bulk_create(question_likes_to_create)
 
-        # Обновляем рейтинги вопросов
-        for question in questions_list:
-            question.update_rating()
+        # Обновляем рейтинги вопросов через JOIN (оптимизировано для PostgreSQL)
+        self.stdout.write("Обновление рейтингов вопросов через SQL")
+        with connection.cursor() as cursor:
+            # Обновляем вопросы с лайками через JOIN
+            cursor.execute(
+                """
+                UPDATE app_question q
+                SET rating = COALESCE(agg.total, 0)
+                FROM (
+                    SELECT question_id, SUM(value) as total
+                    FROM app_questionlike
+                    GROUP BY question_id
+                ) agg
+                WHERE q.id = agg.question_id
+                """
+            )
+            # Обновляем вопросы без лайков (устанавливаем 0)
+            cursor.execute(
+                """
+                UPDATE app_question
+                SET rating = 0
+                WHERE id NOT IN (SELECT DISTINCT question_id FROM app_questionlike WHERE question_id IS NOT NULL)
+                """
+            )
 
         # Создаем лайки на ответы
         answer_likes_count = ratio * 100
@@ -293,18 +362,92 @@ class Command(BaseCommand):
                     answer_likes_to_create.append(AnswerLike(user=user, answer=answer, value=value))
                     pbar.update(1)
 
-        # Создаем лайки одним запросом
-        AnswerLike.objects.bulk_create(answer_likes_to_create)
+        # Обновляем рейтинги ответов через JOIN (оптимизировано для PostgreSQL)
+        self.stdout.write("Обновление рейтингов ответов через SQL")
+        with connection.cursor() as cursor:
+            # Обновляем ответы с лайками через JOIN
+            cursor.execute(
+                """
+                UPDATE app_answer a
+                SET rating = COALESCE(agg.total, 0)
+                FROM (
+                    SELECT answer_id, SUM(value) as total
+                    FROM app_answerlike
+                    GROUP BY answer_id
+                ) agg
+                WHERE a.id = agg.answer_id
+                """
+            )
+            # Обновляем ответы без лайков (устанавливаем 0)
+            cursor.execute(
+                """
+                UPDATE app_answer
+                SET rating = 0
+                WHERE id NOT IN (SELECT DISTINCT answer_id FROM app_answerlike WHERE answer_id IS NOT NULL)
+                """
+            )
 
-        # Обновляем рейтинги ответов
-        for answer in tqdm(Answer.objects.all(), desc="Обновление рейтингов ответов", unit="тег"):
-            answer.update_rating()
+        # Обновляем рейтинги профилей пользователей через JOIN (оптимизировано для PostgreSQL)
+        self.stdout.write("Обновление рейтингов профилей пользователей через SQL")
+        with connection.cursor() as cursor:
+            # Обновляем профили с лайками через LEFT JOIN (объединяем рейтинги вопросов и ответов)
+            cursor.execute(
+                """
+                UPDATE app_profile p
+                SET rating = COALESCE(q_rating.total, 0) + COALESCE(a_rating.total, 0)
+                FROM (
+                    SELECT q.author_id, SUM(ql.value) as total
+                    FROM app_questionlike ql
+                    JOIN app_question q ON ql.question_id = q.id
+                    GROUP BY q.author_id
+                ) q_rating
+                LEFT JOIN (
+                    SELECT a.author_id, SUM(al.value) as total
+                    FROM app_answerlike al
+                    JOIN app_answer a ON al.answer_id = a.id
+                    GROUP BY a.author_id
+                ) a_rating ON q_rating.author_id = a_rating.author_id
+                WHERE p.user_id = q_rating.author_id
+                """
+            )
+            # Обновляем профили, у которых есть только лайки на ответы (но нет на вопросы)
+            cursor.execute(
+                """
+                UPDATE app_profile p
+                SET rating = COALESCE(a_rating.total, 0)
+                FROM (
+                    SELECT a.author_id, SUM(al.value) as total
+                    FROM app_answerlike al
+                    JOIN app_answer a ON al.answer_id = a.id
+                    GROUP BY a.author_id
+                ) a_rating
+                WHERE p.user_id = a_rating.author_id
+                AND p.user_id NOT IN (
+                    SELECT DISTINCT q.author_id FROM app_question q
+                    JOIN app_questionlike ql ON q.id = ql.question_id
+                )
+                """
+            )
+            # Обновляем профили без лайков (устанавливаем 0)
+            cursor.execute(
+                """
+                UPDATE app_profile
+                SET rating = 0
+                WHERE user_id NOT IN (
+                    SELECT DISTINCT q.author_id FROM app_question q
+                    JOIN app_questionlike ql ON q.id = ql.question_id
+                    UNION
+                    SELECT DISTINCT a.author_id FROM app_answer a
+                    JOIN app_answerlike al ON a.id = al.answer_id
+                )
+                """
+            )
 
-        # Обновляем рейтинги профилей пользователей
-        for profile in tqdm(
-            Profile.objects.all(), desc="Обновление рейтингов профилей", unit="профиль"
-        ):
-            profile.update_rating()
+        # Вычисляем время выполнения
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
+        minutes = int(elapsed_time // 60)
+        seconds = elapsed_time % 60
 
         # Статистика
         self.stdout.write("\n" + "=" * 50)
@@ -316,4 +459,8 @@ class Command(BaseCommand):
         self.stdout.write(f"Ответы: {Answer.objects.count()}")
         self.stdout.write(f"Лайки на вопросы: {QuestionLike.objects.count()}")
         self.stdout.write(f"Лайки на ответы: {AnswerLike.objects.count()}")
+        if minutes > 0:
+            self.stdout.write(f"Время выполнения: {minutes} мин {seconds:.2f} сек")
+        else:
+            self.stdout.write(f"Время выполнения: {seconds:.2f} сек")
         self.stdout.write("=" * 50)
