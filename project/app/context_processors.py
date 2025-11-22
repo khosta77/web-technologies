@@ -9,19 +9,11 @@ from typing import Any
 from django.contrib.auth.models import User
 from django.http import HttpRequest
 
-from .repositories import UserRepository
-
-
-# Создаем экземпляр репозитория
-user_repository = UserRepository()
-
 
 def user_context(request: HttpRequest) -> dict[str, Any]:
     """Добавляет текущего пользователя в контекст всех шаблонов"""
-    user_id = request.session.get("user_id")
-    user = None
-    if user_id:
-        user = user_repository.get_user_by_id(user_id)
+    # Используем встроенную систему авторизации Django
+    user = request.user if request.user.is_authenticated else None
 
     path = request.path
     skip_best_members = (

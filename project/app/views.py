@@ -4,13 +4,20 @@ Views для приложения AskPupkin
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from django.conf import settings as django_settings
 from django.contrib import messages
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.files import File
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
 from .constants import ANSWERS_PER_PAGE, QUESTIONS_PER_PAGE
-from .models import Answer, Question
+from .forms import AddAnswerForm, AskQuestionForm, EditProfileForm, LoginForm, SignupForm
+from .models import Answer, Profile, Question, Tag
 from .repositories import (
     AnswerRepository,
     QuestionRepository,
@@ -27,28 +34,18 @@ tag_repository = TagRepository()
 user_repository = UserRepository()
 
 
-def get_authenticated_user(request: HttpRequest) -> User | None:
-    """Получить текущего авторизованного пользователя"""
-    user_id = request.session.get("user_id")
-    if user_id:
-        return user_repository.get_user_by_id(user_id)
-    return None
-
-
 def index(request: HttpRequest) -> HttpResponse:
     """Главная страница - список новых вопросов"""
     questions = question_repository.get_all_questions()
     page = paginate(questions, request, per_page=QUESTIONS_PER_PAGE)
-    user = get_authenticated_user(request)
-    return render(request, "index.html", {"page": page, "user": user})
+    return render(request, "index.html", {"page": page})
 
 
 def hot(request: HttpRequest) -> HttpResponse:
     """Список популярных вопросов"""
     questions = question_repository.get_hot_questions()
     page = paginate(questions, request, per_page=QUESTIONS_PER_PAGE)
-    user = get_authenticated_user(request)
-    return render(request, "index.html", {"page": page, "is_hot": True, "user": user})
+    return render(request, "index.html", {"page": page, "is_hot": True})
 
 
 def question(request: HttpRequest, question_id: int) -> HttpResponse:
@@ -56,8 +53,25 @@ def question(request: HttpRequest, question_id: int) -> HttpResponse:
     question_obj = question_repository.get_question_by_id(question_id)
     if question_obj is None:
         raise Http404("Question not found")
+
+    # Обработка формы добавления ответа
+    if request.method == "POST" and request.user.is_authenticated:
+        form = AddAnswerForm(request.POST)
+        if form.is_valid():
+            answer = Answer.objects.create(
+                text=form.cleaned_data["text"],
+                author=request.user,
+                question=question_obj,
+            )
+            messages.success(request, "Ответ успешно добавлен")
+            # Редирект на страницу вопроса с якорем на добавленный ответ
+            return redirect(f"{question_obj.get_absolute_url()}#answer-{answer.id}")
+        else:
+            messages.error(request, "Ошибка при добавлении ответа. Проверьте введенные данные.")
+    else:
+        form = AddAnswerForm()
+
     answers = answer_repository.get_answers_by_question_id(question_id)
-    user = get_authenticated_user(request)
     page = paginate(answers, request, per_page=ANSWERS_PER_PAGE)
     return render(
         request,
@@ -65,7 +79,7 @@ def question(request: HttpRequest, question_id: int) -> HttpResponse:
         {
             "question": question_obj,
             "page": page,
-            "user": user,
+            "form": form,
         },
     )
 
@@ -74,97 +88,143 @@ def tag(request: HttpRequest, tag_name: str) -> HttpResponse:
     """Список вопросов по тегу"""
     questions = question_repository.get_questions_by_tag(tag_name)
     page = paginate(questions, request, per_page=QUESTIONS_PER_PAGE)
-    user = get_authenticated_user(request)
-    return render(request, "index.html", {"page": page, "tag_name": tag_name, "user": user})
+    return render(request, "index.html", {"page": page, "tag_name": tag_name})
 
 
 def tags(request: HttpRequest) -> HttpResponse:
     """Страница списка тегов"""
     tags_list = tag_repository.get_all_tags()
-    user = get_authenticated_user(request)
-    return render(request, "tags.html", {"tags_list": tags_list, "user": user})
+    return render(request, "tags.html", {"tags_list": tags_list})
 
 
 def login_view(request: HttpRequest) -> HttpResponse:
     """Форма авторизации"""
+    # Если пользователь уже авторизован, редиректим на главную
+    if request.user.is_authenticated:
+        return redirect("index")
+
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data["username"]
+            password = form.cleaned_data["password"]
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                next_url = request.GET.get("next", "/")
+                return redirect(next_url)
+            else:
+                messages.error(request, "Неверное имя пользователя или пароль")
+                # Сохраняем введенные данные при ошибке
+                form = LoginForm(initial={"username": username})
+    else:
+        form = LoginForm()
 
-        user = user_repository.authenticate(username, password)
-        if user:
-            request.session["user_id"] = user.id
-            messages.success(request, f"Добро пожаловать, {username}!")
-            next_url = request.GET.get("next", "/")
-            return redirect(next_url)
-        else:
-            messages.error(request, "Неверное имя пользователя или пароль")
-
-    return render(request, "login.html")
+    return render(request, "login.html", {"form": form})
 
 
 def signup(request: HttpRequest) -> HttpResponse:
     """Форма регистрации"""
-    if request.method == "POST":
-        # Пока просто редирект на главную (регистрация будет в ДЗ4)
-        messages.info(request, "Регистрация будет реализована в ДЗ4")
+    # Если пользователь уже авторизован, редиректим на главную
+    if request.user.is_authenticated:
         return redirect("index")
 
-    user = get_authenticated_user(request)
-    return render(request, "signup.html", {"user": user})
+    if request.method == "POST":
+        form = SignupForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Создаем пользователя
+            user = User.objects.create_user(
+                username=form.cleaned_data["username"],
+                email=form.cleaned_data["email"],
+                password=form.cleaned_data["password"],
+            )
+            # Создаем профиль
+            profile = Profile.objects.create(user=user, rating=0)
+            # Сохраняем аватар, если загружен, иначе используем аватар по умолчанию
+            avatar = form.cleaned_data.get("avatar")
+            if avatar:
+                profile.avatar = avatar
+                profile.save(update_fields=["avatar"])
+            else:
+                # Устанавливаем аватар по умолчанию из static/img/avatar.jpg
+                default_avatar_path = (
+                    Path(django_settings.BASE_DIR) / "static" / "img" / "avatar.jpg"
+                )
+                if default_avatar_path.exists():
+                    with open(default_avatar_path, "rb") as f:
+                        profile.avatar.save("avatar.jpg", File(f), save=True)
+            # Автоматически логиним пользователя
+            login(request, user)
+            messages.success(
+                request, f"Добро пожаловать, {user.username}! Регистрация прошла успешно."
+            )
+            return redirect("index")
+    else:
+        form = SignupForm()
+
+    return render(request, "signup.html", {"form": form})
 
 
+@login_required(login_url="/login/")
 def ask(request: HttpRequest) -> HttpResponse:
     """Форма добавления вопроса"""
-    user = get_authenticated_user(request)
-    if not user:
-        return redirect("login")
+    if request.method == "POST":
+        form = AskQuestionForm(request.POST)
+        if form.is_valid():
+            # Создаем вопрос
+            question_obj = Question.objects.create(
+                title=form.cleaned_data["title"],
+                text=form.cleaned_data["text"],
+                author=request.user,
+            )
+            # Обрабатываем теги
+            tags_list = form.cleaned_data.get("tags", [])
+            for tag_name in tags_list:
+                # Получаем или создаем тег
+                tag_obj, _ = Tag.objects.get_or_create(name=tag_name)
+                question_obj.tags.add(tag_obj)
+            messages.success(request, "Вопрос успешно добавлен")
+            return redirect(question_obj.get_absolute_url())
+    else:
+        form = AskQuestionForm()
 
-    return render(request, "ask.html", {"user": user})
+    return render(request, "ask.html", {"form": form})
 
 
+@login_required(login_url="/login/")
 def settings(request: HttpRequest) -> HttpResponse:
     """Страница настроек профиля"""
-    user = get_authenticated_user(request)
-    if not user:
-        return redirect("login")
-
     if request.method == "POST":
-        username = request.POST.get("username")
-        email = request.POST.get("email")
-        current_password = request.POST.get("current_password")
-        new_password = request.POST.get("new_password")
-        confirm_password = request.POST.get("confirm_password")
-
-        # Обновляем username и email
-        if username:
-            user.username = username
-        if email:
-            user.email = email
-        user.save()
-
-        # Обработка смены пароля
-        if current_password and new_password and confirm_password:
-            if user.check_password(current_password):
-                if new_password == confirm_password:
-                    user.set_password(new_password)
-                    user.save()
-                    messages.success(request, "Пароль успешно изменён")
-                else:
-                    messages.error(request, "Новые пароли не совпадают")
-            else:
-                messages.error(request, "Неверный текущий пароль")
-
-        messages.success(request, "Профиль обновлён")
+        form = EditProfileForm(
+            request.POST, request.FILES, instance=request.user, user=request.user
+        )
+        if form.is_valid():
+            # Сохраняем изменения username и email через форму
+            user = form.save(commit=False)
+            # Обновляем пароль, если указан
+            new_password = form.cleaned_data.get("new_password")
+            if new_password:
+                user.set_password(new_password)
+            user.save()
+            # Обновляем аватар, если загружен
+            avatar = form.cleaned_data.get("avatar")
+            if avatar:
+                profile = user.profile
+                profile.avatar = avatar
+                profile.save(update_fields=["avatar"])
+            messages.success(request, "Профиль успешно обновлён")
+            return redirect("settings")
+    else:
+        form = EditProfileForm(instance=request.user, user=request.user)
 
     questions = (
-        Question.objects.filter(author=user)
+        Question.objects.filter(author=request.user)
         .select_related("author", "author__profile")
         .prefetch_related("tags")
         .order_by("-created_at")
     )
     answers = (
-        Answer.objects.filter(author=user)
+        Answer.objects.filter(author=request.user)
         .select_related("author", "author__profile", "question")
         .order_by("-created_at")
     )
@@ -173,7 +233,7 @@ def settings(request: HttpRequest) -> HttpResponse:
         request,
         "settings.html",
         {
-            "user": user,
+            "form": form,
             "user_questions": questions,
             "user_answers": answers,
         },
@@ -182,10 +242,10 @@ def settings(request: HttpRequest) -> HttpResponse:
 
 def profile(request: HttpRequest, user_id: int) -> HttpResponse:
     """Страница профиля пользователя"""
-    user = get_authenticated_user(request)
-    profile_user = user_repository.get_user_by_id(user_id)
-    if profile_user is None:
-        raise Http404("User not found")
+    try:
+        profile_user = User.objects.get(id=user_id)
+    except User.DoesNotExist as e:
+        raise Http404("User not found") from e
 
     user_questions = (
         Question.objects.filter(author=profile_user)
@@ -203,7 +263,6 @@ def profile(request: HttpRequest, user_id: int) -> HttpResponse:
         request,
         "profile.html",
         {
-            "user": user,
             "profile_user": profile_user,
             "user_questions": user_questions,
             "user_answers": user_answers,
@@ -211,14 +270,18 @@ def profile(request: HttpRequest, user_id: int) -> HttpResponse:
     )
 
 
-def logout(request: HttpRequest) -> HttpResponse:
+def logout_view(request: HttpRequest) -> HttpResponse:
     """Выход из системы"""
-    request.session.flush()
-    messages.success(request, "Вы успешно вышли из системы")
-    return redirect("index")
+    if request.user.is_authenticated:
+        from django.contrib.auth import logout
+
+        logout(request)
+        messages.success(request, "Вы успешно вышли из системы")
+    # Редирект на текущую страницу или главную
+    referer = request.META.get("HTTP_REFERER", "/")
+    return redirect(referer if referer else "index")
 
 
 def custom_404_view(request: HttpRequest, exception: Exception | None = None) -> HttpResponse:
     """Кастомная страница 404"""
-    user = get_authenticated_user(request)
-    return render(request, "404.html", {"user": user}, status=404)
+    return render(request, "404.html", {}, status=404)

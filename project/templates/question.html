@@ -40,7 +40,7 @@
         <h2 id="answers">Answers ({{ page.paginator.count }})</h2>
         
         {% for answer in page %}
-        <div class="answer-item">
+        <div class="answer-item" id="answer-{{ answer.id }}">
             <div class="answer-left-column">
                 <a href="{% url 'profile' user_id=answer.author.id %}">
                     {% if answer.author.profile and answer.author.profile.avatar %}
@@ -73,14 +73,32 @@
         
         {% include 'paginator.html' %}
         
+        {% if user.is_authenticated %}
         <div class="answer-form">
             <h3>Your Answer</h3>
+            {% if messages %}
+            <div class="error-messages">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
             <form method="post">
                 {% csrf_token %}
-                <textarea name="answer" placeholder="Enter your answer here.." class="answer-textarea form-control"></textarea>
+                <div class="form-group">
+                    {{ form.text }}
+                    {% if form.text.errors %}
+                    <div class="error-message">{{ form.text.errors }}</div>
+                    {% endif %}
+                </div>
                 <button type="submit" class="btn btn-primary">Answer</button>
             </form>
         </div>
+        {% else %}
+        <div class="answer-form">
+            <p>Please <a href="{% url 'login' %}">log in</a> to add an answer.</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

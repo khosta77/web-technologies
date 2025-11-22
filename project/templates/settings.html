@@ -5,7 +5,13 @@
 
 {% block content %}
 <div class="settings-page">
-    <h1>Settings: {{ user.username }}</h1>
+    {% if messages %}
+    <div class="error-messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
     
     <form method="post" class="settings-form" enctype="multipart/form-data">
         {% csrf_token %}
@@ -14,14 +20,37 @@
             <h2>Profile Information</h2>
             
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" value="{{ user.username }}" class="form-control" required>
-                <small>Your unique username</small>
+                <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                <div class="error-message">{{ form.username.errors }}</div>
+                {% endif %}
             </div>
             
             <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" value="{{ user.email }}" class="form-control" required>
+                <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                <div class="error-message">{{ form.email.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.avatar.id_for_label }}">{{ form.avatar.label }}</label>
+                {% if user.profile and user.profile.avatar %}
+                <div class="current-avatar">
+                    <img src="{{ user.profile.avatar.url }}" alt="Current avatar" style="max-width: 100px; max-height: 100px;">
+                    <p>Current avatar</p>
+                </div>
+                {% endif %}
+                <div class="file-input-wrapper">
+                    {{ form.avatar }}
+                    <label for="{{ form.avatar.id_for_label }}" class="file-input-label">choose</label>
+                    <span class="file-path"></span>
+                </div>
+                {% if form.avatar.errors %}
+                <div class="error-message">{{ form.avatar.errors }}</div>
+                {% endif %}
             </div>
         </div>
         
@@ -29,18 +58,30 @@
             <h2>Change Password</h2>
             
             <div class="form-group">
-                <label for="current_password">Current Password</label>
-                <input type="password" id="current_password" name="current_password" class="form-control" placeholder="Enter your current password">
+                <label for="{{ form.current_password.id_for_label }}">{{ form.current_password.label }}</label>
+                {{ form.current_password }}
+                {% if form.current_password.help_text %}
+                <small class="form-text text-muted">{{ form.current_password.help_text }}</small>
+                {% endif %}
+                {% if form.current_password.errors %}
+                <div class="error-message">{{ form.current_password.errors }}</div>
+                {% endif %}
             </div>
             
             <div class="form-group">
-                <label for="new_password">New Password</label>
-                <input type="password" id="new_password" name="new_password" class="form-control" placeholder="Enter new password">
+                <label for="{{ form.new_password.id_for_label }}">{{ form.new_password.label }}</label>
+                {{ form.new_password }}
+                {% if form.new_password.errors %}
+                <div class="error-message">{{ form.new_password.errors }}</div>
+                {% endif %}
             </div>
             
             <div class="form-group">
-                <label for="confirm_password">Confirm New Password</label>
-                <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Confirm new password">
+                <label for="{{ form.confirm_password.id_for_label }}">{{ form.confirm_password.label }}</label>
+                {{ form.confirm_password }}
+                {% if form.confirm_password.errors %}
+                <div class="error-message">{{ form.confirm_password.errors }}</div>
+                {% endif %}
             </div>
         </div>
         
