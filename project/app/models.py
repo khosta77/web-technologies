@@ -227,7 +227,8 @@ class QuestionLike(models.Model):
         self.question.update_rating()
         # Обновляем рейтинг профиля автора вопроса
         # В продакшене это должно выполняться через celery-таску
-        self.question.author.profile.update_rating()
+        if hasattr(self.question.author, "profile"):
+            self.question.author.profile.update_rating()
 
     def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
         """Переопределяем delete для обновления рейтинга вопроса и профиля автора"""
@@ -236,7 +237,8 @@ class QuestionLike(models.Model):
         self.question.update_rating()
         # Обновляем рейтинг профиля автора вопроса
         # В продакшене это должно выполняться через celery-таску
-        author.profile.update_rating()
+        if hasattr(author, "profile"):
+            author.profile.update_rating()
         return result
 
 
@@ -276,7 +278,8 @@ class AnswerLike(models.Model):
         self.answer.update_rating()
         # Обновляем рейтинг профиля автора ответа
         # В продакшене это должно выполняться через celery-таску
-        self.answer.author.profile.update_rating()
+        if hasattr(self.answer.author, "profile"):
+            self.answer.author.profile.update_rating()
 
     def delete(self, *args: object, **kwargs: object) -> tuple[int, dict[str, int]]:
         """Переопределяем delete для обновления рейтинга ответа и профиля автора"""
@@ -285,5 +288,6 @@ class AnswerLike(models.Model):
         self.answer.update_rating()
         # Обновляем рейтинг профиля автора ответа
         # В продакшене это должно выполняться через celery-таску
-        author.profile.update_rating()
+        if hasattr(author, "profile"):
+            author.profile.update_rating()
         return result

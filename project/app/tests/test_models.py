@@ -18,7 +18,7 @@ class ProfileModelTestCase(TestCase):
         self.user = User.objects.create_user(
             username="testuser", email="test@example.com", password="testpass123"
         )
-        self.profile = Profile.objects.get(user=self.user)  # Создается через сигнал
+        self.profile = Profile.objects.create(user=self.user, rating=0)
 
     def test_profile_creation(self):
         """Тест создания профиля"""
@@ -44,7 +44,7 @@ class ProfileModelTestCase(TestCase):
         user2 = User.objects.create_user(
             username="testuser2", email="test2@example.com", password="testpass123"
         )
-        profile2 = Profile.objects.get(user=user2)
+        profile2 = Profile.objects.create(user=user2, rating=0)
         profile2.avatar = "img/avatar2.jpg"
         profile2.save()
 

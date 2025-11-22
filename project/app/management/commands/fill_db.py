@@ -217,12 +217,12 @@ class Command(BaseCommand):
                     for user in tqdm(
                         created_users, desc="Сохранение аватаров", unit="аватар", leave=False
                     ):
-                        profile = profile_dict.get(user.id)
-                        if profile:
+                        user_profile = profile_dict.get(user.id)
+                        if user_profile is not None:
                             avatar_file_path = random.choice(available_avatar_files)
                             with open(avatar_file_path, "rb") as f:
-                                profile.avatar.save(avatar_file_path.name, File(f), save=False)
-                            profile.save(update_fields=["avatar"])
+                                user_profile.avatar.save(avatar_file_path.name, File(f), save=False)
+                            user_profile.save(update_fields=["avatar"])
 
                 users_list.extend(created_users)
 
@@ -336,7 +336,11 @@ class Command(BaseCommand):
                 """
                 UPDATE app_question
                 SET rating = 0
-                WHERE id NOT IN (SELECT DISTINCT question_id FROM app_questionlike WHERE question_id IS NOT NULL)
+                WHERE id NOT IN (
+                    SELECT DISTINCT question_id
+                    FROM app_questionlike
+                    WHERE question_id IS NOT NULL
+                )
                 """
             )
 
@@ -383,7 +387,11 @@ class Command(BaseCommand):
                 """
                 UPDATE app_answer
                 SET rating = 0
-                WHERE id NOT IN (SELECT DISTINCT answer_id FROM app_answerlike WHERE answer_id IS NOT NULL)
+                WHERE id NOT IN (
+                    SELECT DISTINCT answer_id
+                    FROM app_answerlike
+                    WHERE answer_id IS NOT NULL
+                )
                 """
             )
 

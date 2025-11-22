@@ -65,13 +65,15 @@ class ProfileAdmin(admin.ModelAdmin):
 
     def get_questions_count(self, obj: Profile) -> int:
         """Получить количество вопросов пользователя"""
-        return obj.user.questions.count()
+        count: int = obj.user.questions.count()
+        return count
 
     get_questions_count.short_description = "Вопросов"  # type: ignore[attr-defined]
 
     def get_answers_count(self, obj: Profile) -> int:
         """Получить количество ответов пользователя"""
-        return obj.user.answers.count()
+        count: int = obj.user.answers.count()
+        return count
 
     get_answers_count.short_description = "Ответов"  # type: ignore[attr-defined]
 
@@ -86,7 +88,8 @@ class TagAdmin(admin.ModelAdmin):
 
     def get_questions_count(self, obj: Tag) -> int:
         """Получить количество вопросов с этим тегом"""
-        return obj.questions.count()
+        count: int = obj.questions.count()
+        return count
 
     get_questions_count.short_description = "Количество вопросов"  # type: ignore[attr-defined]
 
