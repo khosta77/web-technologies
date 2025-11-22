@@ -150,7 +150,7 @@ class Question(models.Model):
 class Answer(models.Model):
     """Ответ на вопрос"""
 
-    text = models.TextField(verbose_name="Текст ответа")
+    text = models.CharField(max_length=4096, verbose_name="Текст ответа")
     author = models.ForeignKey(
         "auth.User",
         on_delete=models.CASCADE,
