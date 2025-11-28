@@ -25,7 +25,8 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.files import File
 from django.core.management.base import BaseCommand
-from django.db import connection, transaction
+from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 from faker import Faker
 from tqdm import tqdm
@@ -315,34 +316,21 @@ class Command(BaseCommand):
         # Создаем лайки одним запросом
         QuestionLike.objects.bulk_create(question_likes_to_create)
 
-        # Обновляем рейтинги вопросов через JOIN (оптимизировано для PostgreSQL)
-        self.stdout.write("Обновление рейтингов вопросов через SQL")
-        with connection.cursor() as cursor:
-            # Обновляем вопросы с лайками через JOIN
-            cursor.execute(
-                """
-                UPDATE app_question q
-                SET rating = COALESCE(agg.total, 0)
-                FROM (
-                    SELECT question_id, SUM(value) as total
-                    FROM app_questionlike
-                    GROUP BY question_id
-                ) agg
-                WHERE q.id = agg.question_id
-                """
-            )
-            # Обновляем вопросы без лайков (устанавливаем 0)
-            cursor.execute(
-                """
-                UPDATE app_question
-                SET rating = 0
-                WHERE id NOT IN (
-                    SELECT DISTINCT question_id
-                    FROM app_questionlike
-                    WHERE question_id IS NOT NULL
-                )
-                """
-            )
+        question_ratings = QuestionLike.objects.values("question_id").annotate(total=Sum("value"))
+
+        ratings_dict = {item["question_id"]: item["total"] for item in question_ratings}
+
+        questions = Question.objects.all()
+        questions_to_update = []
+
+        for question in questions:
+            new_rating = ratings_dict.get(question.id, 0)
+            if question.rating != new_rating:
+                question.rating = new_rating
+                questions_to_update.append(question)
+
+        if questions_to_update:
+            Question.objects.bulk_update(questions_to_update, ["rating"])
 
         # Создаем лайки на ответы
         answer_likes_count = ratio * 100
@@ -366,90 +354,52 @@ class Command(BaseCommand):
                     answer_likes_to_create.append(AnswerLike(user=user, answer=answer, value=value))
                     pbar.update(1)
 
-        # Обновляем рейтинги ответов через JOIN (оптимизировано для PostgreSQL)
-        self.stdout.write("Обновление рейтингов ответов через SQL")
-        with connection.cursor() as cursor:
-            # Обновляем ответы с лайками через JOIN
-            cursor.execute(
-                """
-                UPDATE app_answer a
-                SET rating = COALESCE(agg.total, 0)
-                FROM (
-                    SELECT answer_id, SUM(value) as total
-                    FROM app_answerlike
-                    GROUP BY answer_id
-                ) agg
-                WHERE a.id = agg.answer_id
-                """
-            )
-            # Обновляем ответы без лайков (устанавливаем 0)
-            cursor.execute(
-                """
-                UPDATE app_answer
-                SET rating = 0
-                WHERE id NOT IN (
-                    SELECT DISTINCT answer_id
-                    FROM app_answerlike
-                    WHERE answer_id IS NOT NULL
-                )
-                """
-            )
 
-        # Обновляем рейтинги профилей пользователей через JOIN (оптимизировано для PostgreSQL)
-        self.stdout.write("Обновление рейтингов профилей пользователей через SQL")
-        with connection.cursor() as cursor:
-            # Обновляем профили с лайками через LEFT JOIN (объединяем рейтинги вопросов и ответов)
-            cursor.execute(
-                """
-                UPDATE app_profile p
-                SET rating = COALESCE(q_rating.total, 0) + COALESCE(a_rating.total, 0)
-                FROM (
-                    SELECT q.author_id, SUM(ql.value) as total
-                    FROM app_questionlike ql
-                    JOIN app_question q ON ql.question_id = q.id
-                    GROUP BY q.author_id
-                ) q_rating
-                LEFT JOIN (
-                    SELECT a.author_id, SUM(al.value) as total
-                    FROM app_answerlike al
-                    JOIN app_answer a ON al.answer_id = a.id
-                    GROUP BY a.author_id
-                ) a_rating ON q_rating.author_id = a_rating.author_id
-                WHERE p.user_id = q_rating.author_id
-                """
-            )
-            # Обновляем профили, у которых есть только лайки на ответы (но нет на вопросы)
-            cursor.execute(
-                """
-                UPDATE app_profile p
-                SET rating = COALESCE(a_rating.total, 0)
-                FROM (
-                    SELECT a.author_id, SUM(al.value) as total
-                    FROM app_answerlike al
-                    JOIN app_answer a ON al.answer_id = a.id
-                    GROUP BY a.author_id
-                ) a_rating
-                WHERE p.user_id = a_rating.author_id
-                AND p.user_id NOT IN (
-                    SELECT DISTINCT q.author_id FROM app_question q
-                    JOIN app_questionlike ql ON q.id = ql.question_id
-                )
-                """
-            )
-            # Обновляем профили без лайков (устанавливаем 0)
-            cursor.execute(
-                """
-                UPDATE app_profile
-                SET rating = 0
-                WHERE user_id NOT IN (
-                    SELECT DISTINCT q.author_id FROM app_question q
-                    JOIN app_questionlike ql ON q.id = ql.question_id
-                    UNION
-                    SELECT DISTINCT a.author_id FROM app_answer a
-                    JOIN app_answerlike al ON a.id = al.answer_id
-                )
-                """
-            )
+        answer_ratings = AnswerLike.objects.values("answer_id").annotate(total=Sum("value"))
+
+        ratings_dict = {item["answer_id"]: item["total"] for item in answer_ratings}
+
+        answers = Answer.objects.all()
+        answers_to_update = []
+
+        for answer in answers:
+            new_rating = ratings_dict.get(answer.id, 0)
+            if answer.rating != new_rating:
+                answer.rating = new_rating
+                answers_to_update.append(answer)
+
+        if answers_to_update:
+            Answer.objects.bulk_update(answers_to_update, ["rating"])
+
+        question_ratings = (
+            QuestionLike.objects.select_related("question")
+            .values("question__author_id")
+            .annotate(total=Sum("value"))
+        )
+        q_ratings_dict = {item["question__author_id"]: item["total"] for item in question_ratings}
+
+        answer_ratings = (
+            AnswerLike.objects.select_related("answer")
+            .values("answer__author_id")
+            .annotate(total=Sum("value"))
+        )
+        a_ratings_dict = {item["answer__author_id"]: item["total"] for item in answer_ratings}
+
+        profiles = Profile.objects.all()
+        profiles_to_update = []
+
+        for profile in profiles:
+            user_id = profile.user_id
+            q_rating = q_ratings_dict.get(user_id, 0)
+            a_rating = a_ratings_dict.get(user_id, 0)
+            new_rating = q_rating + a_rating
+
+            if profile.rating != new_rating:
+                profile.rating = new_rating
+                profiles_to_update.append(profile)
+
+        if profiles_to_update:
+            Profile.objects.bulk_update(profiles_to_update, ["rating"])
 
         # Вычисляем время выполнения
         end_time = time.perf_counter()
