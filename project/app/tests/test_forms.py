@@ -104,9 +104,7 @@ class SignupFormTestCase(TestCase):
     def test_signup_form_email_validation(self):
         """Тест: форма проверяет уникальность email"""
         # Создаем пользователя с существующим email
-        User.objects.create_user(
-            username="existing", email="test@example.com", password="pass123"
-        )
+        User.objects.create_user(username="existing", email="test@example.com", password="pass123")
 
         form = SignupForm(
             {
@@ -123,9 +121,7 @@ class SignupFormTestCase(TestCase):
     def test_signup_form_username_validation(self):
         """Тест: форма проверяет уникальность username"""
         # Создаем пользователя с существующим username
-        User.objects.create_user(
-            username="testuser", email="old@example.com", password="pass123"
-        )
+        User.objects.create_user(username="testuser", email="old@example.com", password="pass123")
 
         form = SignupForm(
             {
@@ -154,4 +150,3 @@ class SignupFormTestCase(TestCase):
         user = form.save(commit=False)
         self.assertEqual(user.username, "newuser")
         self.assertEqual(user.email, "new@example.com")
-

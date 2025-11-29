@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
@@ -22,14 +22,11 @@ class LoginForm(AuthenticationForm):
     def __init__(self, *args: object, **kwargs: object) -> None:
         super().__init__(*args, **kwargs)
         # Кастомизация виджетов
-        self.fields["username"].widget.attrs.update({
-            "class": "form-control",
-            "placeholder": "Enter your login here"
-        })
+        self.fields["username"].widget.attrs.update(
+            {"class": "form-control", "placeholder": "Enter your login here"}
+        )
         self.fields["username"].label = "Login"
-        self.fields["password"].widget.attrs.update({
-            "class": "form-control"
-        })
+        self.fields["password"].widget.attrs.update({"class": "form-control"})
 
 
 class SignupForm(UserCreationForm):
@@ -87,7 +84,7 @@ class SignupForm(UserCreationForm):
         *args: object,
         password_min_length: int | None = 2,
         password_validators: list | None = None,
-        **kwargs: object
+        **kwargs: object,
     ) -> None:
         """
         Инициализация формы с настройками валидации пароля
@@ -98,12 +95,8 @@ class SignupForm(UserCreationForm):
         """
         super().__init__(*args, **kwargs)
         # Кастомизация виджетов для паролей
-        self.fields["password1"].widget.attrs.update({
-            "class": "form-control"
-        })
-        self.fields["password2"].widget.attrs.update({
-            "class": "form-control"
-        })
+        self.fields["password1"].widget.attrs.update({"class": "form-control"})
+        self.fields["password2"].widget.attrs.update({"class": "form-control"})
         self.fields["password1"].label = "Password"
         self.fields["password2"].label = "Repeat password"
 
@@ -120,7 +113,9 @@ class SignupForm(UserCreationForm):
             # ВАЖНО: Отключаем стандартные валидаторы Django, если указана кастомная длина
             # UserCreationForm применяет валидаторы из AUTH_PASSWORD_VALIDATORS,
             # которые проверяют минимальную длину (по умолчанию 8 символов)
-            self.password_validators = []  # Пустой список отключает стандартные валидаторы
+            self.password_validators: list[
+                Any
+            ] = []  # Пустой список отключает стандартные валидаторы
 
     def _post_clean(self) -> None:
         """Переопределяем _post_clean для отключения стандартной валидации при кастомной длине"""
@@ -129,6 +124,7 @@ class SignupForm(UserCreationForm):
             # Вызываем только базовую очистку ModelForm без валидации паролей из SetPasswordMixin
             # Это обходит стандартную валидацию паролей Django
             from django.forms import ModelForm
+
             ModelForm._post_clean(self)
         else:
             # Если кастомная длина не указана, используем стандартную валидацию
@@ -153,6 +149,7 @@ class SignupForm(UserCreationForm):
             # Если указаны кастомные валидаторы, применяем их
             if self._password_validators:
                 from django.contrib.auth import password_validation
+
                 user = self.instance if hasattr(self, "instance") and self.instance else None
                 password_validation.validate_password(
                     password1, user, password_validators=self._password_validators
@@ -160,7 +157,9 @@ class SignupForm(UserCreationForm):
 
             # Если кастомная длина указана, не применяем стандартные валидаторы Django
             # Просто возвращаем password2
-            return password2
+            if not password2:
+                raise ValidationError("Пароль не может быть пустым.")
+            return str(password2)
 
         # Если кастомная длина не указана, используем стандартную валидацию Django
         # UserCreationForm использует password_validation через SetPasswordMixin
@@ -173,7 +172,9 @@ class SignupForm(UserCreationForm):
         validators = self._password_validators if self._password_validators else None
         password_validation.validate_password(password1, user, password_validators=validators)
 
-        return password2
+        if not password2:
+            raise ValidationError("Пароль не может быть пустым.")
+        return str(password2)
 
     def clean_email(self) -> str:
         """Проверка уникальности email"""

@@ -171,7 +171,6 @@ class Command(BaseCommand):
 
         # ЗАРАНЕЕ СОЗДАЕМ ВСЕ AVATARFILE ОБЪЕКТЫ
         # Это обеспечивает дедупликацию и правильное сохранение файлов
-        # self.stdout.write("Предварительное создание AvatarFile объектов...")
         ensure_avatar_directory_exists()  # Убеждаемся, что директория существует
 
         avatar_files_list = []  # Список созданных AvatarFile объектов
@@ -194,12 +193,6 @@ class Command(BaseCommand):
                 # Создаем или получаем существующий AvatarFile
                 avatar_file = get_or_create_avatar_file(file_obj)
                 avatar_files_list.append(avatar_file)
-
-        #self.stdout.write(
-        #    self.style.SUCCESS(
-        #        f"Создано {len(avatar_files_list)} уникальных AvatarFile объектов"
-        #    )
-        #)
 
         # Размер пакета для bulk_create
         batch_size = 500

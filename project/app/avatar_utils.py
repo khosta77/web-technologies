@@ -135,11 +135,14 @@ def get_or_create_avatar_file(
                 os.fsync(file_handle.fileno())
 
         if not django_path.exists():
+            parent_writable = (
+                os.access(django_path.parent, os.W_OK) if django_path.parent.exists() else False
+            )
             raise RuntimeError(
                 f"КРИТИЧЕСКАЯ ОШИБКА: Файл не существует после сохранения по пути: {django_path}. "
                 f"Было записано байт: {written if 'written' in locals() else 'unknown'}, "
                 f"Родительская директория существует: {django_path.parent.exists()}, "
-                f"Доступна для записи: {os.access(django_path.parent, os.W_OK) if django_path.parent.exists() else False}"
+                f"Доступна для записи: {parent_writable}"
             ) from None
 
     return avatar_file  # type: ignore[no-any-return]

@@ -116,9 +116,7 @@ def login_view(request: HttpRequest) -> HttpResponse:
 
             # ВАЖНО: Проверяем безопасность URL перед редиректом
             # Защита от Open Redirect уязвимости
-            if not url_has_allowed_host_and_scheme(
-                next_url, allowed_hosts={request.get_host()}
-            ):
+            if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
                 next_url = "/"
 
             return redirect(next_url)
@@ -126,9 +124,7 @@ def login_view(request: HttpRequest) -> HttpResponse:
         form = LoginForm(request)
 
     # Также проверяем next_url для шаблона
-    if not url_has_allowed_host_and_scheme(
-        next_url, allowed_hosts={request.get_host()}
-    ):
+    if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
         next_url = "/"
 
     return render(request, "login.html", {"form": form, "next": next_url})
