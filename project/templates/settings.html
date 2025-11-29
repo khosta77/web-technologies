@@ -14,6 +14,14 @@
     </div>
     {% endif %}
     
+    {% if form.non_field_errors %}
+    <div class="error-messages">
+        {% for error in form.non_field_errors %}
+        <div class="alert alert-error">{{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
     <form method="post" class="settings-form" enctype="multipart/form-data">
         {% csrf_token %}
         
@@ -38,16 +46,26 @@
             
             <div class="form-group">
                 <label for="{{ form.avatar.id_for_label }}">{{ form.avatar.label }}</label>
-                {% if user.profile and user.profile.avatar %}
-                <div class="current-avatar">
-                    <img src="{{ user.profile.avatar.file.url }}" alt="Current avatar" style="max-width: 100px; max-height: 100px;">
-                    <p>Current avatar</p>
+                <div class="avatar-preview-container">
+                    <div class="avatar-preview-item">
+                        <p class="avatar-label">Current</p>
+                        {% if user.profile and user.profile.avatar %}
+                        <img src="{{ user.profile.avatar.file.url }}?v={{ user.profile.avatar.id }}" alt="Current avatar" class="avatar-preview-img">
+                        {% else %}
+                        <div class="avatar-placeholder">
+                            <span>No avatar</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="avatar-preview-item">
+                        <p class="avatar-label">New</p>
+                        <div id="new-avatar-preview" class="avatar-preview-placeholder clickable-avatar-preview">
+                            <span>Select file</span>
+                        </div>
+                    </div>
                 </div>
-                {% endif %}
-                <div class="file-input-wrapper">
+                <div class="file-input-wrapper" style="display: none;">
                     {{ form.avatar }}
-                    <label for="{{ form.avatar.id_for_label }}" class="file-input-label">choose</label>
-                    <span class="file-path"></span>
                 </div>
                 {% if form.avatar.errors %}
                 <div class="error-message">{{ form.avatar.errors }}</div>
@@ -91,6 +109,8 @@
             <button type="button" class="btn btn-secondary" onclick="window.location.reload()">Cancel</button>
         </div>
     </form>
+    
+    <script src="{% static 'js/settings.js' %}"></script>
     
     {% if user_questions or user_answers %}
     <div class="user-activity">

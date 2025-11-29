@@ -257,9 +257,12 @@ def ask(request: HttpRequest) -> HttpResponse:
 def settings(request: HttpRequest) -> HttpResponse:
     """Страница настроек профиля"""
     if request.method == "POST":
+        has_avatar_file = "avatar" in request.FILES
+        
         form = EditProfileForm(
             request.POST, request.FILES, instance=request.user, user=request.user
         )
+        
         if form.is_valid():
             # Сохраняем изменения username и email через форму
             user = form.save(commit=False)
@@ -268,15 +271,44 @@ def settings(request: HttpRequest) -> HttpResponse:
             if new_password:
                 user.set_password(new_password)
             user.save()
+            
             # Обновляем аватар, если загружен
+            # Проверяем как через cleaned_data, так и через request.FILES
             avatar = form.cleaned_data.get("avatar")
+            if not avatar and has_avatar_file:
+                # Если файл есть в request.FILES, но не в cleaned_data, берем из request.FILES
+                avatar = request.FILES.get("avatar")
+            
             if avatar:
-                profile = user.profile
-                avatar_file = get_or_create_avatar_file(avatar)
-                profile.avatar = avatar_file
-                profile.save(update_fields=["avatar"])
-            messages.success(request, "Профиль успешно обновлён")
+                # Получаем или создаем профиль
+                profile, created = Profile.objects.get_or_create(
+                    user=user,
+                    defaults={"rating": 0}
+                )
+                try:
+                    avatar_file = get_or_create_avatar_file(avatar)
+                    profile.avatar = avatar_file
+                    profile.save(update_fields=["avatar"])
+                except Exception as e:
+                    import traceback
+                    error_msg = f"Ошибка при загрузке аватара: {str(e)}"
+                    messages.error(request, error_msg)
+                    # Логируем полную ошибку для отладки
+                    print(f"Avatar upload error: {traceback.format_exc()}")
+            else:
+                if has_avatar_file:
+                    messages.warning(request, "Файл был выбран, но не был обработан. Попробуйте еще раз.")
+                else:
+                    messages.success(request, "Профиль успешно обновлён")
             return redirect("settings")
+        else:
+            # Если форма не валидна, показываем ошибки
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
+            # Также проверяем, есть ли файл в request.FILES, даже если форма не валидна
+            if has_avatar_file:
+                messages.warning(request, "Файл был выбран, но форма не прошла валидацию. Проверьте другие поля и попробуйте снова.")
     else:
         form = EditProfileForm(instance=request.user, user=request.user)
 

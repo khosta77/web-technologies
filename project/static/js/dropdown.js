@@ -29,12 +29,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         userDropdown.addEventListener('mouseenter', showDropdown);
-        
         userDropdown.addEventListener('mouseleave', hideDropdown);
-        
         dropdownMenu.addEventListener('mouseenter', cancelHide);
         dropdownMenu.addEventListener('mouseenter', showDropdown);
-        
         dropdownMenu.addEventListener('mouseleave', hideDropdown);
         
         const avatarLink = document.querySelector('.avatar-link');
