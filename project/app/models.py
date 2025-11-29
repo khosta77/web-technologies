@@ -290,8 +290,6 @@ class AnswerLike(models.Model):
         """Переопределяем save для обновления рейтинга ответа и профиля автора"""
         super().save(*args, **kwargs)
         self.answer.update_rating()
-        # Обновляем рейтинг профиля автора ответа
-        # В продакшене это должно выполняться через celery-таску
         if hasattr(self.answer.author, "profile"):
             self.answer.author.profile.update_rating()
 
@@ -300,8 +298,6 @@ class AnswerLike(models.Model):
         author = self.answer.author
         result: tuple[int, dict[str, int]] = super().delete(*args, **kwargs)
         self.answer.update_rating()
-        # Обновляем рейтинг профиля автора ответа
-        # В продакшене это должно выполняться через celery-таску
         if hasattr(author, "profile"):
             author.profile.update_rating()
         return result

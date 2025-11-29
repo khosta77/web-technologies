@@ -31,7 +31,7 @@
             <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
             {{ form.username }}
             {% if form.username.errors %}
-            <div class="error-message">{{ form.username.errors }}</div>
+            <div class="error-message server-error">{{ form.username.errors|first }}</div>
             {% endif %}
         </div>
         
@@ -39,23 +39,23 @@
             <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
             {{ form.email }}
             {% if form.email.errors %}
-            <div class="error-message">{{ form.email.errors }}</div>
+            <div class="error-message server-error">{{ form.email.errors|first }}</div>
             {% endif %}
         </div>
         
         <div class="form-group">
-            <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
-            {{ form.password }}
-            {% if form.password.errors %}
-            <div class="error-message">{{ form.password.errors }}</div>
+            <label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
+            {{ form.password1 }}
+            {% if form.password1.errors %}
+            <div class="error-message server-error">{{ form.password1.errors|first }}</div>
             {% endif %}
         </div>
         
         <div class="form-group">
-            <label for="{{ form.repeat_password.id_for_label }}">{{ form.repeat_password.label }}</label>
-            {{ form.repeat_password }}
-            {% if form.repeat_password.errors %}
-            <div class="error-message">{{ form.repeat_password.errors }}</div>
+            <label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
+            {{ form.password2 }}
+            {% if form.password2.errors %}
+            <div class="error-message server-error">{{ form.password2.errors|first }}</div>
             {% endif %}
         </div>
         
@@ -67,7 +67,7 @@
                 <span class="file-path"></span>
             </div>
             {% if form.avatar.errors %}
-            <div class="error-message">{{ form.avatar.errors }}</div>
+            <div class="error-message server-error">{{ form.avatar.errors|first }}</div>
             {% endif %}
         </div>
         

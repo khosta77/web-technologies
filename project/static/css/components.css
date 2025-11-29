@@ -74,11 +74,32 @@
     border: 1px solid #f5c6cb;
 }
 
-.field-error {
-    color: #dc3545;
+/* Блоки ошибок под полями формы */
+.form-group .error-message {
+    background-color: #dc3545 !important;
+    color: white !important;
     font-size: 14px;
-    margin-top: 5px;
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: 4px;
     display: block;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.form-group .error-message.server-error {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+.form-group .field-error {
+    background-color: #dc3545 !important;
+    color: white !important;
+    font-size: 14px;
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: 4px;
+    display: block;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Теги */

@@ -5,7 +5,7 @@ Views для приложения AskPupkin
 from __future__ import annotations
 
 from django.contrib import messages
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import Http404, HttpRequest, HttpResponse
@@ -108,30 +108,22 @@ def login_view(request: HttpRequest) -> HttpResponse:
     next_url = request.GET.get("next", "/")
 
     if request.method == "POST":
-        form = LoginForm(request.POST)
+        form = LoginForm(request, data=request.POST)  # AuthenticationForm требует request
         if form.is_valid():
-            username = form.cleaned_data["username"]
-            password = form.cleaned_data["password"]
-            user = authenticate(request, username=username, password=password)
-            if user is not None:
-                login(request, user)
-                # Получаем next из POST (если был передан) или из GET, иначе "/"
-                next_url = request.POST.get("next", request.GET.get("next", "/"))
+            login(request, form.get_user())  # Используем встроенный метод
+            # Получаем next из POST (если был передан) или из GET, иначе "/"
+            next_url = request.POST.get("next", request.GET.get("next", "/"))
 
-                # ВАЖНО: Проверяем безопасность URL перед редиректом
-                # Защита от Open Redirect уязвимости
-                if not url_has_allowed_host_and_scheme(
-                    next_url, allowed_hosts={request.get_host()}
-                ):
-                    next_url = "/"
+            # ВАЖНО: Проверяем безопасность URL перед редиректом
+            # Защита от Open Redirect уязвимости
+            if not url_has_allowed_host_and_scheme(
+                next_url, allowed_hosts={request.get_host()}
+            ):
+                next_url = "/"
 
-                return redirect(next_url)
-            else:
-                messages.error(request, "Неверное имя пользователя или пароль")
-                # Сохраняем введенные данные при ошибке
-                form = LoginForm(initial={"username": username})
+            return redirect(next_url)
     else:
-        form = LoginForm()
+        form = LoginForm(request)
 
     # Также проверяем next_url для шаблона
     if not url_has_allowed_host_and_scheme(
@@ -151,12 +143,10 @@ def signup(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = SignupForm(request.POST, request.FILES)
         if form.is_valid():
-            # Создаем пользователя
-            user = User.objects.create_user(
-                username=form.cleaned_data["username"],
-                email=form.cleaned_data["email"],
-                password=form.cleaned_data["password"],
-            )
+            # UserCreationForm уже создает пользователя, но нам нужно сохранить email
+            user = form.save(commit=False)
+            user.email = form.cleaned_data["email"]
+            user.save()
             # Создаем профиль
             profile = Profile.objects.create(user=user, rating=0)
             # Сохраняем аватар, если загружен, иначе используем аватар по умолчанию

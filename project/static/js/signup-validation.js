@@ -8,8 +8,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Получаем элементы формы
     const usernameField = form.querySelector('#id_username');
     const emailField = form.querySelector('#id_email');
-    const passwordField = form.querySelector('#id_password');
-    const repeatPasswordField = form.querySelector('#id_repeat_password');
+    const passwordField = form.querySelector('#id_password1');
+    const repeatPasswordField = form.querySelector('#id_password2');
     
     // Функция для отображения ошибки под полем
     function showFieldError(field, message) {
@@ -131,26 +131,44 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Очистка ошибок при вводе
+    function hideServerErrors(field) {
+        if (!field) {
+            return;
+        }
+        
+        const formGroup = field.closest('.form-group');
+        if (formGroup) {
+            const serverErrors = formGroup.querySelectorAll('.error-message.server-error');
+            serverErrors.forEach(error => error.remove());
+            
+            field.classList.remove('error');
+        }
+    }
+    
+    // Очистка ошибок при вводе (и серверных, и клиентских)
     if (usernameField) {
         usernameField.addEventListener('input', function() {
             hideFieldError(usernameField);
+            hideServerErrors(usernameField);
         });
     }
     
     if (emailField) {
         emailField.addEventListener('input', function() {
             hideFieldError(emailField);
+            hideServerErrors(emailField);
         });
     }
     
     if (passwordField) {
         passwordField.addEventListener('input', function() {
             hideFieldError(passwordField);
+            hideServerErrors(passwordField);
             // Если есть repeat_password, проверяем совпадение в реальном времени
             if (repeatPasswordField && repeatPasswordField.value) {
                 if (passwordField.value === repeatPasswordField.value) {
                     hideFieldError(repeatPasswordField);
+                    hideServerErrors(repeatPasswordField);
                 } else {
                     showFieldError(repeatPasswordField, 'Пароли не совпадают');
                 }
@@ -160,6 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (repeatPasswordField) {
         repeatPasswordField.addEventListener('input', function() {
+            hideServerErrors(repeatPasswordField);
             if (passwordField && passwordField.value) {
                 if (passwordField.value === repeatPasswordField.value) {
                     hideFieldError(repeatPasswordField);
