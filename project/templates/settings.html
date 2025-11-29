@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load dict_filters %}
 
 {% block title %}Settings: {{ user.username }} - AskPupkin{% endblock %}
 
@@ -100,13 +101,19 @@
             <h3>Your Questions ({{ user_questions|length }})</h3>
             <div class="questions-list">
                 {% for q in user_questions %}
-                <div class="question-item">
+                <div class="question-item" data-question-id="{{ q.id }}">
                     <div class="question-left-column">
                         <div class="question-voting">
                             <div class="voting-controls">
-                                <button class="vote-btn vote-down">-</button>
+                                {% if user.is_authenticated %}
+                                {% with question_like_value=user_question_likes|get_item:q.id %}
+                                <button class="vote-btn vote-down {% if question_like_value == -1 %}active vote-down-active{% endif %}">-</button>
                                 <span class="vote-count">{{ q.rating }}</span>
-                                <button class="vote-btn vote-up">+</button>
+                                <button class="vote-btn vote-up {% if question_like_value == 1 %}active vote-up-active{% endif %}">+</button>
+                                {% endwith %}
+                                {% else %}
+                                <span class="vote-count">{{ q.rating }}</span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -127,13 +134,19 @@
             <h3>Your Answers ({{ user_answers|length }})</h3>
             <div class="answers-list">
                 {% for answer in user_answers %}
-                <div class="answer-item">
+                <div class="answer-item" data-question-id="{{ answer.question.id }}" data-answer-id="{{ answer.id }}">
                     <div class="answer-left-column">
                         <div class="answer-voting">
                             <div class="voting-controls">
-                                <button class="vote-btn vote-down">-</button>
+                                {% if user.is_authenticated %}
+                                {% with answer_like_value=user_answer_likes|get_item:answer.id %}
+                                <button class="vote-btn vote-down {% if answer_like_value == -1 %}active vote-down-active{% endif %}">-</button>
                                 <span class="vote-count">{{ answer.rating }}</span>
-                                <button class="vote-btn vote-up">+</button>
+                                <button class="vote-btn vote-up {% if answer_like_value == 1 %}active vote-up-active{% endif %}">+</button>
+                                {% endwith %}
+                                {% else %}
+                                <span class="vote-count">{{ answer.rating }}</span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

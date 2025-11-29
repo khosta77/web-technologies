@@ -8,14 +8,15 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.http import Http404, HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_http_methods
 
 from .avatar_utils import get_default_avatar_file, get_or_create_avatar_file
 from .constants import ANSWERS_PER_PAGE, QUESTIONS_PER_PAGE
 from .forms import AddAnswerForm, AskQuestionForm, EditProfileForm, LoginForm, SignupForm
-from .models import Answer, Profile, Question, Tag
+from .models import Answer, AnswerLike, Profile, Question, QuestionLike, Tag
 from .repositories import (
     AnswerRepository,
     QuestionRepository,
@@ -36,14 +37,38 @@ def index(request: HttpRequest) -> HttpResponse:
     """Главная страница - список новых вопросов"""
     questions = question_repository.get_all_questions()
     page = paginate(questions, request, per_page=QUESTIONS_PER_PAGE)
-    return render(request, "index.html", {"page": page})
+    
+    # Получаем информацию о лайках пользователя для вопросов на странице
+    user_question_likes = {}
+    if request.user.is_authenticated:
+        question_ids = [q.id for q in page]
+        if question_ids:
+            question_likes = QuestionLike.objects.filter(
+                user=request.user, question_id__in=question_ids
+            ).select_related("question")
+            for like in question_likes:
+                user_question_likes[like.question.id] = like.value
+    
+    return render(request, "index.html", {"page": page, "user_question_likes": user_question_likes})
 
 
 def hot(request: HttpRequest) -> HttpResponse:
     """Список популярных вопросов"""
     questions = question_repository.get_hot_questions()
     page = paginate(questions, request, per_page=QUESTIONS_PER_PAGE)
-    return render(request, "index.html", {"page": page, "is_hot": True})
+    
+    # Получаем информацию о лайках пользователя для вопросов на странице
+    user_question_likes = {}
+    if request.user.is_authenticated:
+        question_ids = [q.id for q in page]
+        if question_ids:
+            question_likes = QuestionLike.objects.filter(
+                user=request.user, question_id__in=question_ids
+            ).select_related("question")
+            for like in question_likes:
+                user_question_likes[like.question.id] = like.value
+    
+    return render(request, "index.html", {"page": page, "is_hot": True, "user_question_likes": user_question_likes})
 
 
 def question(request: HttpRequest, question_id: int) -> HttpResponse:
@@ -74,6 +99,25 @@ def question(request: HttpRequest, question_id: int) -> HttpResponse:
 
     answers = answer_repository.get_answers_by_question_id(question_id)
     page = paginate(answers, request, per_page=ANSWERS_PER_PAGE)
+    
+    # Получаем информацию о лайках пользователя (если авторизован)
+    user_question_like = None
+    user_answer_likes = {}
+    if request.user.is_authenticated:
+        try:
+            user_question_like = QuestionLike.objects.get(user=request.user, question=question_obj)
+        except QuestionLike.DoesNotExist:
+            pass
+        
+        # Получаем лайки для всех ответов на странице
+        answer_ids = [answer.id for answer in page]
+        if answer_ids:
+            answer_likes = AnswerLike.objects.filter(
+                user=request.user, answer_id__in=answer_ids
+            ).select_related("answer")
+            for like in answer_likes:
+                user_answer_likes[like.answer.id] = like.value
+    
     return render(
         request,
         "question.html",
@@ -81,6 +125,8 @@ def question(request: HttpRequest, question_id: int) -> HttpResponse:
             "question": question_obj,
             "page": page,
             "form": form,
+            "user_question_like": user_question_like,
+            "user_answer_likes": user_answer_likes,
         },
     )
 
@@ -89,7 +135,19 @@ def tag(request: HttpRequest, tag_name: str) -> HttpResponse:
     """Список вопросов по тегу"""
     questions = question_repository.get_questions_by_tag(tag_name)
     page = paginate(questions, request, per_page=QUESTIONS_PER_PAGE)
-    return render(request, "index.html", {"page": page, "tag_name": tag_name})
+    
+    # Получаем информацию о лайках пользователя для вопросов на странице
+    user_question_likes = {}
+    if request.user.is_authenticated:
+        question_ids = [q.id for q in page]
+        if question_ids:
+            question_likes = QuestionLike.objects.filter(
+                user=request.user, question_id__in=question_ids
+            ).select_related("question")
+            for like in question_likes:
+                user_question_likes[like.question.id] = like.value
+    
+    return render(request, "index.html", {"page": page, "tag_name": tag_name, "user_question_likes": user_question_likes})
 
 
 def tags(request: HttpRequest) -> HttpResponse:
@@ -233,6 +291,26 @@ def settings(request: HttpRequest) -> HttpResponse:
         .select_related("author", "author__profile", "question")
         .order_by("-created_at")
     )
+    
+    # Получаем информацию о лайках пользователя для вопросов и ответов
+    user_question_likes = {}
+    user_answer_likes = {}
+    if request.user.is_authenticated:
+        question_ids = [q.id for q in questions]
+        if question_ids:
+            question_likes = QuestionLike.objects.filter(
+                user=request.user, question_id__in=question_ids
+            ).select_related("question")
+            for like in question_likes:
+                user_question_likes[like.question.id] = like.value
+        
+        answer_ids = [a.id for a in answers]
+        if answer_ids:
+            answer_likes = AnswerLike.objects.filter(
+                user=request.user, answer_id__in=answer_ids
+            ).select_related("answer")
+            for like in answer_likes:
+                user_answer_likes[like.answer.id] = like.value
 
     return render(
         request,
@@ -241,6 +319,8 @@ def settings(request: HttpRequest) -> HttpResponse:
             "form": form,
             "user_questions": questions,
             "user_answers": answers,
+            "user_question_likes": user_question_likes,
+            "user_answer_likes": user_answer_likes,
         },
     )
 
@@ -263,6 +343,26 @@ def profile(request: HttpRequest, user_id: int) -> HttpResponse:
         .select_related("author", "author__profile", "question")
         .order_by("-created_at")
     )
+    
+    # Получаем информацию о лайках текущего пользователя для вопросов и ответов
+    user_question_likes = {}
+    user_answer_likes = {}
+    if request.user.is_authenticated:
+        question_ids = [q.id for q in user_questions]
+        if question_ids:
+            question_likes = QuestionLike.objects.filter(
+                user=request.user, question_id__in=question_ids
+            ).select_related("question")
+            for like in question_likes:
+                user_question_likes[like.question.id] = like.value
+        
+        answer_ids = [a.id for a in user_answers]
+        if answer_ids:
+            answer_likes = AnswerLike.objects.filter(
+                user=request.user, answer_id__in=answer_ids
+            ).select_related("answer")
+            for like in answer_likes:
+                user_answer_likes[like.answer.id] = like.value
 
     return render(
         request,
@@ -271,6 +371,8 @@ def profile(request: HttpRequest, user_id: int) -> HttpResponse:
             "profile_user": profile_user,
             "user_questions": user_questions,
             "user_answers": user_answers,
+            "user_question_likes": user_question_likes,
+            "user_answer_likes": user_answer_likes,
         },
     )
 
@@ -290,3 +392,124 @@ def logout_view(request: HttpRequest) -> HttpResponse:
 def custom_404_view(request: HttpRequest, exception: Exception | None = None) -> HttpResponse:
     """Кастомная страница 404"""
     return render(request, "404.html", {}, status=404)
+
+
+@login_required(login_url="/login/")
+@require_http_methods(["POST"])
+def like_question(request: HttpRequest) -> JsonResponse:
+    """AJAX обработчик для лайка/дизлайка вопроса"""
+    try:
+        question_id = int(request.POST.get("question_id", 0))
+        value = int(request.POST.get("value", 0))
+    except (ValueError, TypeError):
+        return JsonResponse({"error": "Неверные параметры запроса"}, status=400)
+
+    if value not in [-1, 1]:
+        return JsonResponse({"error": "Значение должно быть -1 или 1"}, status=400)
+
+    try:
+        question_obj = Question.objects.get(id=question_id)
+    except Question.DoesNotExist:
+        return JsonResponse({"error": "Вопрос не найден"}, status=404)
+
+    # Получаем или создаем лайк
+    like, created = QuestionLike.objects.get_or_create(
+        user=request.user,
+        question=question_obj,
+        defaults={"value": value},
+    )
+
+    # Если лайк уже существовал, обновляем значение
+    if not created:
+        # Если пользователь пытается поставить тот же лайк, удаляем его
+        if like.value == value:
+            like.delete()
+            question_obj.refresh_from_db()
+            return JsonResponse({"rating": question_obj.rating, "removed": True})
+        # Иначе обновляем значение
+        like.value = value
+        like.save()
+
+    question_obj.refresh_from_db()
+    return JsonResponse({"rating": question_obj.rating, "removed": False})
+
+
+@login_required(login_url="/login/")
+@require_http_methods(["POST"])
+def like_answer(request: HttpRequest) -> JsonResponse:
+    """AJAX обработчик для лайка/дизлайка ответа"""
+    try:
+        answer_id = int(request.POST.get("answer_id", 0))
+        value = int(request.POST.get("value", 0))
+    except (ValueError, TypeError):
+        return JsonResponse({"error": "Неверные параметры запроса"}, status=400)
+
+    if value not in [-1, 1]:
+        return JsonResponse({"error": "Значение должно быть -1 или 1"}, status=400)
+
+    try:
+        answer_obj = Answer.objects.get(id=answer_id)
+    except Answer.DoesNotExist:
+        return JsonResponse({"error": "Ответ не найден"}, status=404)
+
+    # Получаем или создаем лайк
+    like, created = AnswerLike.objects.get_or_create(
+        user=request.user,
+        answer=answer_obj,
+        defaults={"value": value},
+    )
+
+    # Если лайк уже существовал, обновляем значение
+    if not created:
+        # Если пользователь пытается поставить тот же лайк, удаляем его
+        if like.value == value:
+            like.delete()
+            answer_obj.refresh_from_db()
+            return JsonResponse({"rating": answer_obj.rating, "removed": True})
+        # Иначе обновляем значение
+        like.value = value
+        like.save()
+
+    answer_obj.refresh_from_db()
+    return JsonResponse({"rating": answer_obj.rating, "removed": False})
+
+
+@login_required(login_url="/login/")
+@require_http_methods(["POST"])
+def mark_correct_answer(request: HttpRequest) -> JsonResponse:
+    """AJAX обработчик для отметки правильного ответа"""
+    try:
+        question_id = int(request.POST.get("question_id", 0))
+        answer_id = int(request.POST.get("answer_id", 0))
+    except (ValueError, TypeError):
+        return JsonResponse({"error": "Неверные параметры запроса"}, status=400)
+
+    try:
+        question_obj = Question.objects.get(id=question_id)
+    except Question.DoesNotExist:
+        return JsonResponse({"error": "Вопрос не найден"}, status=404)
+
+    # Проверка авторства вопроса
+    if question_obj.author != request.user:
+        return JsonResponse({"error": "Только автор вопроса может отметить правильный ответ"}, status=403)
+
+    try:
+        answer_obj = Answer.objects.get(id=answer_id, question=question_obj)
+    except Answer.DoesNotExist:
+        return JsonResponse({"error": "Ответ не найден или не принадлежит этому вопросу"}, status=404)
+
+    # Получаем значение чекбокса
+    is_correct = request.POST.get("is_correct", "false").lower() == "true"
+
+    if is_correct:
+        # Сбрасываем все другие ответы на этот вопрос
+        Answer.objects.filter(question=question_obj).exclude(id=answer_id).update(is_correct=False)
+        # Устанавливаем текущий ответ как правильный
+        answer_obj.is_correct = True
+        answer_obj.save(update_fields=["is_correct"])
+        return JsonResponse({"success": True, "is_correct": True})
+    else:
+        # Снимаем отметку
+        answer_obj.is_correct = False
+        answer_obj.save(update_fields=["is_correct"])
+        return JsonResponse({"success": True, "is_correct": False})
