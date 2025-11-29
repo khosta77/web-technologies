@@ -4,7 +4,7 @@
 
 from django.contrib import admin
 
-from .models import Answer, AnswerLike, Profile, Question, QuestionLike, Tag
+from .models import Answer, AnswerLike, AvatarFile, Profile, Question, QuestionLike, Tag
 
 
 # Inline классы
@@ -76,6 +76,22 @@ class ProfileAdmin(admin.ModelAdmin):
         return count
 
     get_answers_count.short_description = "Ответов"  # type: ignore[attr-defined]
+
+
+@admin.register(AvatarFile)
+class AvatarFileAdmin(admin.ModelAdmin):
+    """Админ-панель для файлов аватаров"""
+
+    list_display = ["file_hash", "file", "usage_count", "created_at"]
+    list_filter = ["created_at"]
+    search_fields = ["file_hash"]
+    readonly_fields = ["file_hash", "created_at"]
+    list_per_page = 25
+
+    fieldsets = (
+        ("Основная информация", {"fields": ("file", "file_hash")}),
+        ("Статистика", {"fields": ("usage_count", "created_at"), "classes": ("collapse",)}),
+    )
 
 
 @admin.register(Tag)

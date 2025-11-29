@@ -4,17 +4,14 @@ Views для приложения AskPupkin
 
 from __future__ import annotations
 
-from pathlib import Path
-
-from django.conf import settings as django_settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.core.files import File
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
+from .avatar_utils import get_default_avatar_file, get_or_create_avatar_file
 from .constants import ANSWERS_PER_PAGE, QUESTIONS_PER_PAGE
 from .forms import AddAnswerForm, AskQuestionForm, EditProfileForm, LoginForm, SignupForm
 from .models import Answer, Profile, Question, Tag
@@ -143,16 +140,15 @@ def signup(request: HttpRequest) -> HttpResponse:
             # Сохраняем аватар, если загружен, иначе используем аватар по умолчанию
             avatar = form.cleaned_data.get("avatar")
             if avatar:
-                profile.avatar = avatar
+                avatar_file = get_or_create_avatar_file(avatar)
+                profile.avatar = avatar_file
                 profile.save(update_fields=["avatar"])
             else:
                 # Устанавливаем аватар по умолчанию из static/img/avatar.jpg
-                default_avatar_path = (
-                    Path(django_settings.BASE_DIR) / "static" / "img" / "avatar.jpg"
-                )
-                if default_avatar_path.exists():
-                    with open(default_avatar_path, "rb") as f:
-                        profile.avatar.save("avatar.jpg", File(f), save=True)
+                default_avatar_file = get_default_avatar_file()
+                if default_avatar_file:
+                    profile.avatar = default_avatar_file
+                    profile.save(update_fields=["avatar"])
             # Автоматически логиним пользователя
             login(request, user)
             messages.success(
@@ -210,7 +206,8 @@ def settings(request: HttpRequest) -> HttpResponse:
             avatar = form.cleaned_data.get("avatar")
             if avatar:
                 profile = user.profile
-                profile.avatar = avatar
+                avatar_file = get_or_create_avatar_file(avatar)
+                profile.avatar = avatar_file
                 profile.save(update_fields=["avatar"])
             messages.success(request, "Профиль успешно обновлён")
             return redirect("settings")

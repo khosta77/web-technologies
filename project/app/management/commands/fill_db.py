@@ -23,7 +23,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.files import File
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Sum
@@ -31,6 +31,7 @@ from django.utils import timezone
 from faker import Faker
 from tqdm import tqdm
 
+from app.avatar_utils import ensure_avatar_directory_exists, get_or_create_avatar_file
 from app.models import Answer, AnswerLike, Profile, Question, QuestionLike, Tag
 
 
@@ -168,6 +169,38 @@ class Command(BaseCommand):
             if default_avatar.exists():
                 available_avatar_files = [default_avatar]
 
+        # ЗАРАНЕЕ СОЗДАЕМ ВСЕ AVATARFILE ОБЪЕКТЫ
+        # Это обеспечивает дедупликацию и правильное сохранение файлов
+        # self.stdout.write("Предварительное создание AvatarFile объектов...")
+        ensure_avatar_directory_exists()  # Убеждаемся, что директория существует
+
+        avatar_files_list = []  # Список созданных AvatarFile объектов
+
+        if available_avatar_files:
+            for avatar_file_path in tqdm(
+                available_avatar_files, desc="Создание AvatarFile", unit="файл"
+            ):
+                # Читаем файл в память
+                with open(avatar_file_path, "rb") as f:
+                    file_content = f.read()
+
+                # Создаем SimpleUploadedFile из содержимого файла
+                file_obj = SimpleUploadedFile(
+                    name=avatar_file_path.name,
+                    content=file_content,
+                    content_type="image/jpeg",
+                )
+
+                # Создаем или получаем существующий AvatarFile
+                avatar_file = get_or_create_avatar_file(file_obj)
+                avatar_files_list.append(avatar_file)
+
+        #self.stdout.write(
+        #    self.style.SUCCESS(
+        #        f"Создано {len(avatar_files_list)} уникальных AvatarFile объектов"
+        #    )
+        #)
+
         # Размер пакета для bulk_create
         batch_size = 500
         # Хешируем пароль один раз для всех пользователей
@@ -207,23 +240,23 @@ class Command(BaseCommand):
                 # Создаем профили одним запросом
                 Profile.objects.bulk_create(profiles_to_create)
 
-                # Обновляем аватары для всех пользователей
-                if available_avatar_files:
+                # Присваиваем аватары пользователям
+                if avatar_files_list:
                     # Загружаем профили из БД после bulk_create, чтобы получить связи
                     user_ids = [user.id for user in created_users]
                     profiles = Profile.objects.filter(user_id__in=user_ids).select_related("user")
                     # Создаем словарь для быстрого доступа
                     profile_dict = {profile.user_id: profile for profile in profiles}
 
-                    for user in tqdm(
-                        created_users, desc="Сохранение аватаров", unit="аватар", leave=False
-                    ):
+                    profiles_to_update = []
+                    for user in created_users:
                         user_profile = profile_dict.get(user.id)
                         if user_profile is not None:
-                            avatar_file_path = random.choice(available_avatar_files)
-                            with open(avatar_file_path, "rb") as f:
-                                user_profile.avatar.save(avatar_file_path.name, File(f), save=False)
-                            user_profile.save(update_fields=["avatar"])
+                            avatar_file = random.choice(avatar_files_list)
+                            user_profile.avatar = avatar_file
+                            profiles_to_update.append(user_profile)
+
+                    Profile.objects.bulk_update(profiles_to_update, ["avatar"])
 
                 users_list.extend(created_users)
 
@@ -353,7 +386,6 @@ class Command(BaseCommand):
                     answer_likes_set.add(like_key)
                     answer_likes_to_create.append(AnswerLike(user=user, answer=answer, value=value))
                     pbar.update(1)
-
 
         answer_ratings = AnswerLike.objects.values("answer_id").annotate(total=Sum("value"))
 

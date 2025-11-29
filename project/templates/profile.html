@@ -7,7 +7,7 @@
 <div class="profile-page">
     <div class="profile-header">
         {% if profile_user.profile and profile_user.profile.avatar %}
-        <img src="{{ profile_user.profile.avatar.url }}" alt="Avatar" class="profile-avatar">
+        <img src="{{ profile_user.profile.avatar.file.url }}" alt="Avatar" class="profile-avatar">
         {% else %}
         {% load static %}
         <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="profile-avatar">

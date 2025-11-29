@@ -4,18 +4,28 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.urls import reverse
 
 
-def avatar_upload_to(instance: Profile, filename: str) -> str:
-    """Генерирует путь для сохранения аватара с временной и пользовательской частями"""
-    now = datetime.now()
-    user_id = instance.user.id
-    return f"avatars/{now.year}/{now.month:02d}/user_{user_id}/{filename}"
+class AvatarFile(models.Model):
+    """Модель для хранения уникальных файлов аватарок"""
+
+    file_hash = models.CharField(
+        max_length=64, unique=True, db_index=True, verbose_name="Хеш файла"
+    )
+    file = models.ImageField(upload_to="avatars/unique/", verbose_name="Файл")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    usage_count = models.IntegerField(default=0, verbose_name="Количество использований")
+
+    class Meta:
+        verbose_name = "Файл аватара"
+        verbose_name_plural = "Файлы аватаров"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"AvatarFile {self.file_hash[:8]}... ({self.usage_count} uses)"
 
 
 class Profile(models.Model):
@@ -27,9 +37,11 @@ class Profile(models.Model):
         related_name="profile",
         verbose_name="Пользователь",
     )
-    avatar = models.ImageField(
-        upload_to=avatar_upload_to,
-        default="img/avatar.jpg",
+    avatar = models.ForeignKey(
+        AvatarFile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         verbose_name="Аватар",
     )
     rating = models.IntegerField(
@@ -48,6 +60,12 @@ class Profile(models.Model):
     def get_rating(self) -> int:
         """Получить рейтинг пользователя (денормализованное значение)"""
         return int(self.rating)
+
+    def get_avatar_url(self) -> str:
+        """Получить URL аватара пользователя"""
+        if self.avatar and self.avatar.file:
+            return str(self.avatar.file.url)
+        return "/static/img/avatar.jpg"
 
     def update_rating(self) -> None:
         """Обновить рейтинг пользователя на основе лайков на вопросы и ответы"""
@@ -225,8 +243,6 @@ class QuestionLike(models.Model):
         """Переопределяем save для обновления рейтинга вопроса и профиля автора"""
         super().save(*args, **kwargs)
         self.question.update_rating()
-        # Обновляем рейтинг профиля автора вопроса
-        # В продакшене это должно выполняться через celery-таску
         if hasattr(self.question.author, "profile"):
             self.question.author.profile.update_rating()
 
@@ -235,8 +251,6 @@ class QuestionLike(models.Model):
         author = self.question.author
         result: tuple[int, dict[str, int]] = super().delete(*args, **kwargs)
         self.question.update_rating()
-        # Обновляем рейтинг профиля автора вопроса
-        # В продакшене это должно выполняться через celery-таску
         if hasattr(author, "profile"):
             author.profile.update_rating()
         return result

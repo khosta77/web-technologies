@@ -6,8 +6,6 @@ import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
 
-import app.models
-
 
 class Migration(migrations.Migration):
     initial = True
@@ -47,7 +45,7 @@ class Migration(migrations.Migration):
                     "avatar",
                     models.ImageField(
                         default="img/avatar.jpg",
-                        upload_to=app.models.avatar_upload_to,
+                        upload_to="avatars/",
                         verbose_name="Аватар",
                     ),
                 ),

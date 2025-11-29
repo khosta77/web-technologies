@@ -80,6 +80,10 @@ class UserRepository(IUserRepository):
         if answers_count is None:
             answers_count = user.answers.count() if hasattr(user, "answers") else 0
 
+        avatar_name = "img/avatar.jpg"
+        if hasattr(user, "profile") and user.profile.avatar:
+            avatar_name = user.profile.avatar.file.name
+
         return {
             "id": user.id,
             "username": user.username,
@@ -87,7 +91,7 @@ class UserRepository(IUserRepository):
             "rating": rating,
             "questions_count": questions_count,
             "answers_count": answers_count,
-            "avatar": user.profile.avatar.name if hasattr(user, "profile") else "img/avatar.jpg",
+            "avatar": avatar_name,
         }
 
     @staticmethod

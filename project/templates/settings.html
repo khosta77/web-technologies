@@ -39,7 +39,7 @@
                 <label for="{{ form.avatar.id_for_label }}">{{ form.avatar.label }}</label>
                 {% if user.profile and user.profile.avatar %}
                 <div class="current-avatar">
-                    <img src="{{ user.profile.avatar.url }}" alt="Current avatar" style="max-width: 100px; max-height: 100px;">
+                    <img src="{{ user.profile.avatar.file.url }}" alt="Current avatar" style="max-width: 100px; max-height: 100px;">
                     <p>Current avatar</p>
                 </div>
                 {% endif %}
