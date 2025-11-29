@@ -4,6 +4,9 @@ Views для приложения AskPupkin
 
 from __future__ import annotations
 
+import contextlib
+import traceback
+
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -37,7 +40,7 @@ def index(request: HttpRequest) -> HttpResponse:
     """Главная страница - список новых вопросов"""
     questions = question_repository.get_all_questions()
     page = paginate(questions, request, per_page=QUESTIONS_PER_PAGE)
-    
+
     # Получаем информацию о лайках пользователя для вопросов на странице
     user_question_likes = {}
     if request.user.is_authenticated:
@@ -48,7 +51,7 @@ def index(request: HttpRequest) -> HttpResponse:
             ).select_related("question")
             for like in question_likes:
                 user_question_likes[like.question.id] = like.value
-    
+
     return render(request, "index.html", {"page": page, "user_question_likes": user_question_likes})
 
 
@@ -56,7 +59,7 @@ def hot(request: HttpRequest) -> HttpResponse:
     """Список популярных вопросов"""
     questions = question_repository.get_hot_questions()
     page = paginate(questions, request, per_page=QUESTIONS_PER_PAGE)
-    
+
     # Получаем информацию о лайках пользователя для вопросов на странице
     user_question_likes = {}
     if request.user.is_authenticated:
@@ -67,8 +70,12 @@ def hot(request: HttpRequest) -> HttpResponse:
             ).select_related("question")
             for like in question_likes:
                 user_question_likes[like.question.id] = like.value
-    
-    return render(request, "index.html", {"page": page, "is_hot": True, "user_question_likes": user_question_likes})
+
+    return render(
+        request,
+        "index.html",
+        {"page": page, "is_hot": True, "user_question_likes": user_question_likes},
+    )
 
 
 def question(request: HttpRequest, question_id: int) -> HttpResponse:
@@ -99,16 +106,14 @@ def question(request: HttpRequest, question_id: int) -> HttpResponse:
 
     answers = answer_repository.get_answers_by_question_id(question_id)
     page = paginate(answers, request, per_page=ANSWERS_PER_PAGE)
-    
+
     # Получаем информацию о лайках пользователя (если авторизован)
     user_question_like = None
     user_answer_likes = {}
     if request.user.is_authenticated:
-        try:
+        with contextlib.suppress(QuestionLike.DoesNotExist):
             user_question_like = QuestionLike.objects.get(user=request.user, question=question_obj)
-        except QuestionLike.DoesNotExist:
-            pass
-        
+
         # Получаем лайки для всех ответов на странице
         answer_ids = [answer.id for answer in page]
         if answer_ids:
@@ -117,7 +122,7 @@ def question(request: HttpRequest, question_id: int) -> HttpResponse:
             ).select_related("answer")
             for like in answer_likes:
                 user_answer_likes[like.answer.id] = like.value
-    
+
     return render(
         request,
         "question.html",
@@ -135,7 +140,7 @@ def tag(request: HttpRequest, tag_name: str) -> HttpResponse:
     """Список вопросов по тегу"""
     questions = question_repository.get_questions_by_tag(tag_name)
     page = paginate(questions, request, per_page=QUESTIONS_PER_PAGE)
-    
+
     # Получаем информацию о лайках пользователя для вопросов на странице
     user_question_likes = {}
     if request.user.is_authenticated:
@@ -146,8 +151,12 @@ def tag(request: HttpRequest, tag_name: str) -> HttpResponse:
             ).select_related("question")
             for like in question_likes:
                 user_question_likes[like.question.id] = like.value
-    
-    return render(request, "index.html", {"page": page, "tag_name": tag_name, "user_question_likes": user_question_likes})
+
+    return render(
+        request,
+        "index.html",
+        {"page": page, "tag_name": tag_name, "user_question_likes": user_question_likes},
+    )
 
 
 def tags(request: HttpRequest) -> HttpResponse:
@@ -258,11 +267,11 @@ def settings(request: HttpRequest) -> HttpResponse:
     """Страница настроек профиля"""
     if request.method == "POST":
         has_avatar_file = "avatar" in request.FILES
-        
+
         form = EditProfileForm(
             request.POST, request.FILES, instance=request.user, user=request.user
         )
-        
+
         if form.is_valid():
             # Сохраняем изменения username и email через форму
             user = form.save(commit=False)
@@ -271,35 +280,32 @@ def settings(request: HttpRequest) -> HttpResponse:
             if new_password:
                 user.set_password(new_password)
             user.save()
-            
+
             # Обновляем аватар, если загружен
             # Проверяем как через cleaned_data, так и через request.FILES
             avatar = form.cleaned_data.get("avatar")
             if not avatar and has_avatar_file:
                 # Если файл есть в request.FILES, но не в cleaned_data, берем из request.FILES
                 avatar = request.FILES.get("avatar")
-            
+
             if avatar:
                 # Получаем или создаем профиль
-                profile, created = Profile.objects.get_or_create(
-                    user=user,
-                    defaults={"rating": 0}
-                )
+                profile, _created = Profile.objects.get_or_create(user=user, defaults={"rating": 0})
                 try:
                     avatar_file = get_or_create_avatar_file(avatar)
                     profile.avatar = avatar_file
                     profile.save(update_fields=["avatar"])
                 except Exception as e:
-                    import traceback
-                    error_msg = f"Ошибка при загрузке аватара: {str(e)}"
+                    error_msg = f"Ошибка при загрузке аватара: {e!s}"
                     messages.error(request, error_msg)
                     # Логируем полную ошибку для отладки
                     print(f"Avatar upload error: {traceback.format_exc()}")
+            elif has_avatar_file:
+                messages.warning(
+                    request, "Файл был выбран, но не был обработан. Попробуйте еще раз."
+                )
             else:
-                if has_avatar_file:
-                    messages.warning(request, "Файл был выбран, но не был обработан. Попробуйте еще раз.")
-                else:
-                    messages.success(request, "Профиль успешно обновлён")
+                messages.success(request, "Профиль успешно обновлён")
             return redirect("settings")
         else:
             # Если форма не валидна, показываем ошибки
@@ -308,7 +314,11 @@ def settings(request: HttpRequest) -> HttpResponse:
                     messages.error(request, f"{field}: {error}")
             # Также проверяем, есть ли файл в request.FILES, даже если форма не валидна
             if has_avatar_file:
-                messages.warning(request, "Файл был выбран, но форма не прошла валидацию. Проверьте другие поля и попробуйте снова.")
+                messages.warning(
+                    request,
+                    "Файл был выбран, но форма не прошла валидацию. "
+                    "Проверьте другие поля и попробуйте снова.",
+                )
     else:
         form = EditProfileForm(instance=request.user, user=request.user)
 
@@ -323,7 +333,7 @@ def settings(request: HttpRequest) -> HttpResponse:
         .select_related("author", "author__profile", "question")
         .order_by("-created_at")
     )
-    
+
     # Получаем информацию о лайках пользователя для вопросов и ответов
     user_question_likes = {}
     user_answer_likes = {}
@@ -335,7 +345,7 @@ def settings(request: HttpRequest) -> HttpResponse:
             ).select_related("question")
             for like in question_likes:
                 user_question_likes[like.question.id] = like.value
-        
+
         answer_ids = [a.id for a in answers]
         if answer_ids:
             answer_likes = AnswerLike.objects.filter(
@@ -375,7 +385,7 @@ def profile(request: HttpRequest, user_id: int) -> HttpResponse:
         .select_related("author", "author__profile", "question")
         .order_by("-created_at")
     )
-    
+
     # Получаем информацию о лайках текущего пользователя для вопросов и ответов
     user_question_likes = {}
     user_answer_likes = {}
@@ -387,7 +397,7 @@ def profile(request: HttpRequest, user_id: int) -> HttpResponse:
             ).select_related("question")
             for like in question_likes:
                 user_question_likes[like.question.id] = like.value
-        
+
         answer_ids = [a.id for a in user_answers]
         if answer_ids:
             answer_likes = AnswerLike.objects.filter(
@@ -523,12 +533,16 @@ def mark_correct_answer(request: HttpRequest) -> JsonResponse:
 
     # Проверка авторства вопроса
     if question_obj.author != request.user:
-        return JsonResponse({"error": "Только автор вопроса может отметить правильный ответ"}, status=403)
+        return JsonResponse(
+            {"error": "Только автор вопроса может отметить правильный ответ"}, status=403
+        )
 
     try:
         answer_obj = Answer.objects.get(id=answer_id, question=question_obj)
     except Answer.DoesNotExist:
-        return JsonResponse({"error": "Ответ не найден или не принадлежит этому вопросу"}, status=404)
+        return JsonResponse(
+            {"error": "Ответ не найден или не принадлежит этому вопросу"}, status=404
+        )
 
     # Получаем значение чекбокса
     is_correct = request.POST.get("is_correct", "false").lower() == "true"

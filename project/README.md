@@ -23,10 +23,14 @@ project/
 │   │   ├── answer_repository.py
 │   │   ├── tag_repository.py
 │   │   └── user_repository.py
+│   ├── templatetags/        # Кастомные фильтры для шаблонов
+│   │   ├── __init__.py
+│   │   └── dict_filters.py  # Фильтр get_item для работы со словарями
 │   ├── constants.py          # Константы приложения
 │   ├── utils.py             # Утилиты (пагинация)
-│   ├── views.py             # View функции
-│   ├── urls.py              # URL маршруты
+│   ├── avatar_utils.py      # Утилиты для работы с аватарами (дедупликация)
+│   ├── views.py             # View функции (включая AJAX обработчики)
+│   ├── urls.py              # URL маршруты (включая AJAX endpoints)
 │   ├── models.py            # Django модели
 │   ├── admin.py             # Админ-панель
 │   ├── context_processors.py # Context processors
@@ -64,15 +68,18 @@ project/
 │   ├── js/
 │   │   ├── validation.js      # Валидация регистрации
 │   │   ├── login-validation.js # Валидация входа
+│   │   ├── signup-validation.js # Валидация регистрации
 │   │   ├── search.js          # Поиск
-│   │   └── dropdown.js        # Выпадающее меню пользователя
+│   │   ├── dropdown.js        # Выпадающее меню пользователя
+│   │   ├── votes.js           # AJAX обработка лайков и отметки правильного ответа
+│   │   └── settings.js         # Обработка формы настроек (превью аватара)
 │   └── img/
 │       ├── avatar.jpg
 │       ├── logo.png
 │       └── search.jpg
 ├── uploads/                # Файлы, загруженные пользователями
-│   └── img/
-│       └── avatar.jpg      # Дефолтный аватар
+│   └── avatars/
+│       └── unique/         # Уникальные аватары (дедупликация по хешу)
 ├── db.sqlite3              # База данных
 ├── manage.py
 └── README.md
