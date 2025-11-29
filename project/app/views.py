@@ -52,7 +52,10 @@ def question(request: HttpRequest, question_id: int) -> HttpResponse:
         raise Http404("Question not found")
 
     # Обработка формы добавления ответа
-    if request.method == "POST" and request.user.is_authenticated:
+    if request.method == "POST":
+        if not request.user.is_authenticated:
+            return redirect(f"/login/?next={question_obj.get_absolute_url()}")
+
         form = AddAnswerForm(request.POST)
         if form.is_valid():
             answer = Answer.objects.create(
@@ -100,6 +103,9 @@ def login_view(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return redirect("index")
 
+    # Получаем параметр next из GET-запроса
+    next_url = request.GET.get("next", "/")
+
     if request.method == "POST":
         form = LoginForm(request.POST)
         if form.is_valid():
@@ -108,7 +114,8 @@ def login_view(request: HttpRequest) -> HttpResponse:
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                next_url = request.GET.get("next", "/")
+                # Получаем next из POST (если был передан) или из GET, иначе "/"
+                next_url = request.POST.get("next", request.GET.get("next", "/"))
                 return redirect(next_url)
             else:
                 messages.error(request, "Неверное имя пользователя или пароль")
@@ -117,7 +124,7 @@ def login_view(request: HttpRequest) -> HttpResponse:
     else:
         form = LoginForm()
 
-    return render(request, "login.html", {"form": form})
+    return render(request, "login.html", {"form": form, "next": next_url})
 
 
 def signup(request: HttpRequest) -> HttpResponse:
