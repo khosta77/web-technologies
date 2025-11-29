@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from .avatar_utils import get_default_avatar_file, get_or_create_avatar_file
 from .constants import ANSWERS_PER_PAGE, QUESTIONS_PER_PAGE
@@ -116,6 +117,14 @@ def login_view(request: HttpRequest) -> HttpResponse:
                 login(request, user)
                 # Получаем next из POST (если был передан) или из GET, иначе "/"
                 next_url = request.POST.get("next", request.GET.get("next", "/"))
+
+                # ВАЖНО: Проверяем безопасность URL перед редиректом
+                # Защита от Open Redirect уязвимости
+                if not url_has_allowed_host_and_scheme(
+                    next_url, allowed_hosts={request.get_host()}
+                ):
+                    next_url = "/"
+
                 return redirect(next_url)
             else:
                 messages.error(request, "Неверное имя пользователя или пароль")
@@ -123,6 +132,12 @@ def login_view(request: HttpRequest) -> HttpResponse:
                 form = LoginForm(initial={"username": username})
     else:
         form = LoginForm()
+
+    # Также проверяем next_url для шаблона
+    if not url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}
+    ):
+        next_url = "/"
 
     return render(request, "login.html", {"form": form, "next": next_url})
 
