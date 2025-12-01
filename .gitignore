@@ -16,7 +16,6 @@ build/*
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
-Makefile
 
 # Python
 *.ipynb_checkpoints
@@ -39,12 +38,20 @@ json/
 .env
 .env.local
 .env.production
+.env.example
+.env.test
+.env.*.local
+
+# Docker
+docker-compose.override.yml
 
 # Django
 *.log
 *.pot
 *.pyc
 __pycache__/
+
+db.*
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
