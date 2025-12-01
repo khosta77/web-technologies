@@ -1,24 +1,30 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load dict_filters %}
 
 {% block title %}{{ question.title }} - AskPupkin{% endblock %}
 
 {% block content %}
 <div class="question-page">
-    <div class="question-item">
+    <div class="question-item" data-question-id="{{ question.id }}">
         <div class="question-left-column">
             <a href="{% url 'profile' user_id=question.author.id %}">
                 {% if question.author.profile and question.author.profile.avatar %}
-                <img src="{{ question.author.profile.avatar.url }}" alt="Avatar" class="question-avatar">
+                <img src="{{ question.author.profile.avatar.file.url }}" alt="Avatar" class="question-avatar">
                 {% else %}
                 <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="question-avatar">
                 {% endif %}
             </a>
             <div class="question-voting">
                 <div class="voting-controls">
-                    <button class="vote-btn vote-down">-</button>
+                    {% if user.is_authenticated %}
+                    <button class="vote-btn vote-down {% if user_question_like and user_question_like.value == -1 %}active vote-down-active{% endif %}">-</button>
                     <span class="vote-count">{{ question.rating }}</span>
-                    <button class="vote-btn vote-up">+</button>
+                    <button class="vote-btn vote-up {% if user_question_like and user_question_like.value == 1 %}active vote-up-active{% endif %}">+</button>
+                    {% else %}
+                    <span class="vote-count">{{ question.rating }}</span>
+                    <a href="{% url 'login' %}?next={{ request.path }}" class="vote-btn vote-disabled" title="Войдите, чтобы голосовать">+/-</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -40,26 +46,37 @@
         <h2 id="answers">Answers ({{ page.paginator.count }})</h2>
         
         {% for answer in page %}
-        <div class="answer-item">
+        <div class="answer-item" id="answer-{{ answer.id }}" data-question-id="{{ question.id }}" data-answer-id="{{ answer.id }}">
             <div class="answer-left-column">
                 <a href="{% url 'profile' user_id=answer.author.id %}">
                     {% if answer.author.profile and answer.author.profile.avatar %}
-                    <img src="{{ answer.author.profile.avatar.url }}" alt="Avatar" class="answer-avatar">
+                    <img src="{{ answer.author.profile.avatar.file.url }}" alt="Avatar" class="answer-avatar">
                     {% else %}
                     <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="answer-avatar">
                     {% endif %}
                 </a>
                 <div class="answer-voting">
                     <div class="voting-controls">
-                        <button class="vote-btn vote-down">-</button>
+                        {% if user.is_authenticated %}
+                        {% with answer_like_value=user_answer_likes|get_item:answer.id %}
+                        <button class="vote-btn vote-down {% if answer_like_value == -1 %}active vote-down-active{% endif %}">-</button>
                         <span class="vote-count">{{ answer.rating }}</span>
-                        <button class="vote-btn vote-up">+</button>
+                        <button class="vote-btn vote-up {% if answer_like_value == 1 %}active vote-up-active{% endif %}">+</button>
+                        {% endwith %}
+                        {% else %}
+                        <span class="vote-count">{{ answer.rating }}</span>
+                        <a href="{% url 'login' %}?next={{ request.path }}" class="vote-btn vote-disabled" title="Войдите, чтобы голосовать">+/-</a>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="answer-meta">
+                    {% if user.is_authenticated and user == question.author %}
                     <label class="correct-answer">
                         <input type="checkbox" {% if answer.is_correct %}checked{% endif %}> Correct!
                     </label>
+                    {% elif answer.is_correct %}
+                    <span class="correct-answer-label">✓ Correct!</span>
+                    {% endif %}
                 </div>
             </div>
             
@@ -73,14 +90,32 @@
         
         {% include 'paginator.html' %}
         
+        {% if user.is_authenticated %}
         <div class="answer-form">
             <h3>Your Answer</h3>
+            {% if messages %}
+            <div class="error-messages">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
             <form method="post">
                 {% csrf_token %}
-                <textarea name="answer" placeholder="Enter your answer here.." class="answer-textarea form-control"></textarea>
+                <div class="form-group">
+                    {{ form.text }}
+                    {% if form.text.errors %}
+                    <div class="error-message">{{ form.text.errors }}</div>
+                    {% endif %}
+                </div>
                 <button type="submit" class="btn btn-primary">Answer</button>
             </form>
         </div>
+        {% else %}
+        <div class="answer-form">
+            <p>Please <a href="{% url 'login' %}?next={{ request.path }}">log in</a> to add an answer.</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

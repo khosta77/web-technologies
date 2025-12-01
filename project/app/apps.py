@@ -6,5 +6,4 @@ class AppConfig(AppConfig):
     name = "app"
 
     def ready(self) -> None:
-        """Подключение сигналов при готовности приложения"""
-        import app.signals  # noqa: F401
+        """Инициализация приложения"""

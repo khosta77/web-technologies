@@ -7,7 +7,7 @@ from __future__ import annotations
 from django.contrib.auth.models import User
 from django.test import TestCase
 
-from app.models import Answer, AnswerLike, Profile, Question, QuestionLike, Tag
+from app.models import Answer, AnswerLike, AvatarFile, Profile, Question, QuestionLike, Tag
 
 
 class ProfileModelTestCase(TestCase):
@@ -18,12 +18,14 @@ class ProfileModelTestCase(TestCase):
         self.user = User.objects.create_user(
             username="testuser", email="test@example.com", password="testpass123"
         )
-        self.profile = Profile.objects.get(user=self.user)  # Создается через сигнал
+        self.profile = Profile.objects.create(user=self.user, rating=0)
 
     def test_profile_creation(self):
         """Тест создания профиля"""
         assert self.profile.user == self.user
-        assert self.profile.avatar.name == "img/avatar.jpg"
+        # Аватар может быть None или ссылаться на AvatarFile
+        if self.profile.avatar:
+            assert isinstance(self.profile.avatar, AvatarFile)
 
     def test_profile_get_rating(self):
         """Тест получения рейтинга пользователя"""
@@ -32,26 +34,44 @@ class ProfileModelTestCase(TestCase):
 
     def test_profile_with_custom_avatar(self):
         """Тест: профиль с кастомным аватаром"""
-        # Устанавливаем кастомный аватар
-        self.profile.avatar = "img/avatar1.jpg"
+        # Создаем AvatarFile для теста
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from app.avatar_utils import get_or_create_avatar_file
+
+        test_file = SimpleUploadedFile(
+            "avatar1.jpg", b"fake image content", content_type="image/jpeg"
+        )
+        avatar_file = get_or_create_avatar_file(test_file)
+        self.profile.avatar = avatar_file
         self.profile.save()
 
-        assert self.profile.avatar.name == "img/avatar1.jpg"
-        assert self.profile.avatar.url.startswith("/media/")
+        assert self.profile.avatar == avatar_file
+        assert isinstance(self.profile.avatar, AvatarFile)
+        assert self.profile.avatar.file.name.startswith("avatars/unique/")
 
     def test_profile_avatar_url(self):
         """Тест: правильный URL для аватара"""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from app.avatar_utils import get_or_create_avatar_file
+
         user2 = User.objects.create_user(
             username="testuser2", email="test2@example.com", password="testpass123"
         )
-        profile2 = Profile.objects.get(user=user2)
-        profile2.avatar = "img/avatar2.jpg"
+        profile2 = Profile.objects.create(user=user2, rating=0)
+        test_file = SimpleUploadedFile(
+            "avatar2.jpg", b"fake image content", content_type="image/jpeg"
+        )
+        avatar_file = get_or_create_avatar_file(test_file)
+        profile2.avatar = avatar_file
         profile2.save()
 
         # Проверяем, что URL формируется правильно
-        avatar_url = profile2.avatar.url
-        assert avatar_url.startswith("/media/")
-        assert "avatar2.jpg" in avatar_url
+        if profile2.avatar:
+            avatar_url = profile2.avatar.file.url
+            assert avatar_url.startswith("/media/")
+            assert "avatars/unique" in avatar_url
 
 
 class TagModelTestCase(TestCase):

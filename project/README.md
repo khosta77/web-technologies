@@ -23,13 +23,16 @@ project/
 │   │   ├── answer_repository.py
 │   │   ├── tag_repository.py
 │   │   └── user_repository.py
+│   ├── templatetags/        # Кастомные фильтры для шаблонов
+│   │   ├── __init__.py
+│   │   └── dict_filters.py  # Фильтр get_item для работы со словарями
 │   ├── constants.py          # Константы приложения
 │   ├── utils.py             # Утилиты (пагинация)
-│   ├── views.py             # View функции
-│   ├── urls.py              # URL маршруты
+│   ├── avatar_utils.py      # Утилиты для работы с аватарами (дедупликация)
+│   ├── views.py             # View функции (включая AJAX обработчики)
+│   ├── urls.py              # URL маршруты (включая AJAX endpoints)
 │   ├── models.py            # Django модели
 │   ├── admin.py             # Админ-панель
-│   ├── signals.py           # Django сигналы
 │   ├── context_processors.py # Context processors
 │   ├── handlers.py          # Обработчики ошибок (404, 500)
 │   ├── middleware.py        # Custom middleware
@@ -65,15 +68,18 @@ project/
 │   ├── js/
 │   │   ├── validation.js      # Валидация регистрации
 │   │   ├── login-validation.js # Валидация входа
+│   │   ├── signup-validation.js # Валидация регистрации
 │   │   ├── search.js          # Поиск
-│   │   └── dropdown.js        # Выпадающее меню пользователя
+│   │   ├── dropdown.js        # Выпадающее меню пользователя
+│   │   ├── votes.js           # AJAX обработка лайков и отметки правильного ответа
+│   │   └── settings.js         # Обработка формы настроек (превью аватара)
 │   └── img/
 │       ├── avatar.jpg
 │       ├── logo.png
 │       └── search.jpg
 ├── uploads/                # Файлы, загруженные пользователями
-│   └── img/
-│       └── avatar.jpg      # Дефолтный аватар
+│   └── avatars/
+│       └── unique/         # Уникальные аватары (дедупликация по хешу)
 ├── db.sqlite3              # База данных
 ├── manage.py
 └── README.md
@@ -117,13 +123,31 @@ project/
 
 ### С Poetry
 
-```bash
-cd project
-poetry install
-poetry run python manage.py runserver 8000
-```
+1. **Настройка переменных окружения (опционально):**
 
-* В браузере: `http://localhost:8000/`
+   ```bash
+   cd project
+   cp .env.example .env
+   # Отредактируйте .env при необходимости
+   ```
+
+2. **Запуск базы данных:**
+
+   ```bash
+   make up-database
+   ```
+
+3. **Выполнение миграций и запуск сервера:**
+
+   ```bash
+   poetry install
+   poetry run python manage.py migrate
+   poetry run python manage.py runserver 8000
+   ```
+
+   * В браузере: `http://localhost:8000/`
+
+**Подробные инструкции по работе с БД см. в [PROJECTS.md](PROJECTS.md)**
 
 ## Установка зависимостей
 

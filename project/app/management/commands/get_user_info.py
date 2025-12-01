@@ -82,7 +82,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"Вопросов: {user.questions.count()}")
                 self.stdout.write(f"Ответов: {user.answers.count()}")
                 if user.profile.avatar:
-                    self.stdout.write(f"Аватар: {user.profile.avatar.name}")
+                    self.stdout.write(f"Аватар: {user.profile.avatar.file.name}")
 
             self.stdout.write("")
             self.stdout.write(self.style.SUCCESS("=" * 60))

@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, develop, '*' ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+env:
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  lint-and-checks:
+    name: Lint & Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+    # ========== ИНИЦИАЛИЗАЦИЯ ==========
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    
+    - name: Configure Poetry
+      run: |
+        $HOME/.local/bin/poetry config virtualenvs.create true
+        $HOME/.local/bin/poetry config virtualenvs.in-project true
+    
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v4
+      with:
+        path: project/.venv
+        key: venv-${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-${{ hashFiles('project/poetry.lock') }}
+        restore-keys: |
+          venv-${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-
+    
+    - name: Install dependencies
+      working-directory: ./project
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --no-root --only=dev
+    
+    - name: Install project
+      working-directory: ./project
+      run: poetry install --no-interaction --only=dev
+    
+    # ========== ЛИНТЕРЫ ==========
+    - name: Run poetry check
+      working-directory: ./project
+      run: poetry check
+    
+    - name: Run ruff check
+      working-directory: ./project
+      continue-on-error: false
+      run: poetry run ruff check app/
+    
+    - name: Run ruff format check
+      working-directory: ./project
+      run: poetry run ruff format --check app/
+    
+    - name: Run flake8
+      working-directory: ./project
+      run: poetry run flake8 app/
+    
+    - name: Run mypy
+      working-directory: ./project
+      run: poetry run mypy
+    
+    - name: Run bandit
+      working-directory: ./project
+      run: poetry run bandit -c pyproject.toml -r app/ -ll
+    
+    # ========== DJANGO CHECKS ==========
+    - name: Install all dependencies (for Django checks)
+      working-directory: ./project
+      run: poetry install --no-interaction
+    
+    - name: Check Django configuration
+      working-directory: ./project
+      run: poetry run python manage.py check
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: askpupkin_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    
+    - name: Configure Poetry
+      run: |
+        $HOME/.local/bin/poetry config virtualenvs.create true
+        $HOME/.local/bin/poetry config virtualenvs.in-project true
+    
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v4
+      with:
+        path: project/.venv
+        key: venv-${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-${{ hashFiles('project/poetry.lock') }}
+        restore-keys: |
+          venv-${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-
+    
+    - name: Install dependencies
+      working-directory: ./project
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --no-root
+    
+    - name: Install project
+      working-directory: ./project
+      run: poetry install --no-interaction
+    
+    - name: Run tests
+      working-directory: ./project
+      env:
+        DB_NAME: askpupkin_test
+        DB_USER: postgres
+        DB_PASSWORD: postgres
+        DB_HOST: localhost
+        DB_PORT: 5432
+        USER: postgres
+      run: poetry run pytest app/tests/ -v
+

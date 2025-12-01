@@ -16,6 +16,10 @@ class CustomErrorMiddleware(MiddlewareMixin):
         """
         Обрабатывает ответ и показывает кастомную 404 если статус 404
         """
+        # Исключаем админку из обработки ошибок
+        if request.path.startswith("/admin/"):
+            return response
+
         if response.status_code == 404:
             try:
                 # Добавляем user в контекст через context processor
@@ -34,6 +38,10 @@ class CustomErrorMiddleware(MiddlewareMixin):
         Обрабатывает исключения и показывает кастомную страницу 500
         даже при DEBUG = True
         """
+        # Исключаем админку из обработки ошибок
+        if request.path.startswith("/admin/"):
+            return None
+
         # Http404 обрабатывается через process_response
         if isinstance(exception, Http404):
             return None

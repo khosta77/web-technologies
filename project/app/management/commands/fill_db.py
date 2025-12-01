@@ -16,18 +16,22 @@ from __future__ import annotations
 
 import hashlib
 import random
+import time
 
 from datetime import timedelta
 from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.files import File
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management.base import BaseCommand
+from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 from faker import Faker
 from tqdm import tqdm
 
+from app.avatar_utils import ensure_avatar_directory_exists, get_or_create_avatar_file
 from app.models import Answer, AnswerLike, Profile, Question, QuestionLike, Tag
 
 
@@ -52,6 +56,7 @@ class Command(BaseCommand):
             )
 
     def handle(self, *args: object, **options: dict[str, object]) -> None:
+        start_time = time.perf_counter()
         ratio_value = options.get("ratio", 100)
         ratio: int = int(ratio_value) if isinstance(ratio_value, (int, str)) else 100
 
@@ -164,28 +169,89 @@ class Command(BaseCommand):
             if default_avatar.exists():
                 available_avatar_files = [default_avatar]
 
-        for i in tqdm(range(ratio), desc="Создание пользователей", unit="пользователь"):
-            username = fake.user_name() + str(i)  # Уникальный username
-            email = fake.email()
-            user = User.objects.create_user(
-                username=username,
-                email=email,
-                password="12345",  # Простой пароль для тестирования
-            )
-            # Profile создается автоматически через сигналы
-            profile = user.profile
+        # ЗАРАНЕЕ СОЗДАЕМ ВСЕ AVATARFILE ОБЪЕКТЫ
+        # Это обеспечивает дедупликацию и правильное сохранение файлов
+        ensure_avatar_directory_exists()  # Убеждаемся, что директория существует
 
-            # Сохраняем аватар через Django Storage API
-            if available_avatar_files:
-                avatar_file_path = random.choice(available_avatar_files)
+        avatar_files_list = []  # Список созданных AvatarFile объектов
+
+        if available_avatar_files:
+            for avatar_file_path in tqdm(
+                available_avatar_files, desc="Создание AvatarFile", unit="файл"
+            ):
+                # Читаем файл в память
                 with open(avatar_file_path, "rb") as f:
-                    profile.avatar.save(avatar_file_path.name, File(f), save=False)
-                profile.save()
-            else:
-                # Если нет доступных аватаров, профиль уже имеет дефолтный
-                profile.save()
+                    file_content = f.read()
 
-            users_list.append(user)
+                # Создаем SimpleUploadedFile из содержимого файла
+                file_obj = SimpleUploadedFile(
+                    name=avatar_file_path.name,
+                    content=file_content,
+                    content_type="image/jpeg",
+                )
+
+                # Создаем или получаем существующий AvatarFile
+                avatar_file = get_or_create_avatar_file(file_obj)
+                avatar_files_list.append(avatar_file)
+
+        # Размер пакета для bulk_create
+        batch_size = 500
+        # Хешируем пароль один раз для всех пользователей
+        from django.contrib.auth.hashers import make_password
+
+        hashed_password = make_password("12345")
+
+        # Создаем пользователей пакетами
+        for batch_start in tqdm(
+            range(0, ratio, batch_size), desc="Создание пользователей", unit="пакет"
+        ):
+            batch_end = min(batch_start + batch_size, ratio)
+            users_to_create = []
+            profiles_to_create = []
+
+            with transaction.atomic():
+                # Создаем пользователей для текущего пакета
+                for i in range(batch_start, batch_end):
+                    username = fake.user_name() + str(i)  # Уникальный username
+                    email = fake.email()
+                    user = User(
+                        username=username,
+                        email=email,
+                        password=hashed_password,  # Используем предварительно хешированный пароль
+                        is_active=True,
+                    )
+                    users_to_create.append(user)
+
+                # Создаем пользователей одним запросом
+                created_users = User.objects.bulk_create(users_to_create)
+
+                # Создаем профили для созданных пользователей
+                for user in created_users:
+                    profile = Profile(user=user, rating=0)
+                    profiles_to_create.append(profile)
+
+                # Создаем профили одним запросом
+                Profile.objects.bulk_create(profiles_to_create)
+
+                # Присваиваем аватары пользователям
+                if avatar_files_list:
+                    # Загружаем профили из БД после bulk_create, чтобы получить связи
+                    user_ids = [user.id for user in created_users]
+                    profiles = Profile.objects.filter(user_id__in=user_ids).select_related("user")
+                    # Создаем словарь для быстрого доступа
+                    profile_dict = {profile.user_id: profile for profile in profiles}
+
+                    profiles_to_update = []
+                    for user in created_users:
+                        user_profile = profile_dict.get(user.id)
+                        if user_profile is not None:
+                            avatar_file = random.choice(avatar_files_list)
+                            user_profile.avatar = avatar_file
+                            profiles_to_update.append(user_profile)
+
+                    Profile.objects.bulk_update(profiles_to_update, ["avatar"])
+
+                users_list.extend(created_users)
 
         # Создаем вопросы
         questions_count = ratio * 10
@@ -208,10 +274,19 @@ class Command(BaseCommand):
         # Создаем вопросы одним запросом
         questions_list = Question.objects.bulk_create(questions_to_create)
 
-        # Добавляем теги к вопросам
+        # Добавляем теги к вопросам пакетно через through модель
+        question_tag_relations = []
         for question in tqdm(questions_list, desc="Добавление тегов к вопросам", unit="вопрос"):
             num_tags = random.randint(1, 3)
-            question.tags.add(*random.sample(tags_list, min(num_tags, len(tags_list))))
+            selected_tags = random.sample(tags_list, min(num_tags, len(tags_list)))
+            for tag in selected_tags:
+                question_tag_relations.append(
+                    Question.tags.through(question_id=question.id, tag_id=tag.id)
+                )
+
+        # Создаем связи пакетно
+        if question_tag_relations:
+            Question.tags.through.objects.bulk_create(question_tag_relations, ignore_conflicts=True)
 
         # Создаем ответы
         answers_count = ratio * 100
@@ -267,9 +342,21 @@ class Command(BaseCommand):
         # Создаем лайки одним запросом
         QuestionLike.objects.bulk_create(question_likes_to_create)
 
-        # Обновляем рейтинги вопросов
-        for question in questions_list:
-            question.update_rating()
+        question_ratings = QuestionLike.objects.values("question_id").annotate(total=Sum("value"))
+
+        ratings_dict = {item["question_id"]: item["total"] for item in question_ratings}
+
+        questions = Question.objects.all()
+        questions_to_update = []
+
+        for question in questions:
+            new_rating = ratings_dict.get(question.id, 0)
+            if question.rating != new_rating:
+                question.rating = new_rating
+                questions_to_update.append(question)
+
+        if questions_to_update:
+            Question.objects.bulk_update(questions_to_update, ["rating"])
 
         # Создаем лайки на ответы
         answer_likes_count = ratio * 100
@@ -293,18 +380,57 @@ class Command(BaseCommand):
                     answer_likes_to_create.append(AnswerLike(user=user, answer=answer, value=value))
                     pbar.update(1)
 
-        # Создаем лайки одним запросом
-        AnswerLike.objects.bulk_create(answer_likes_to_create)
+        answer_ratings = AnswerLike.objects.values("answer_id").annotate(total=Sum("value"))
 
-        # Обновляем рейтинги ответов
-        for answer in tqdm(Answer.objects.all(), desc="Обновление рейтингов ответов", unit="тег"):
-            answer.update_rating()
+        ratings_dict = {item["answer_id"]: item["total"] for item in answer_ratings}
 
-        # Обновляем рейтинги профилей пользователей
-        for profile in tqdm(
-            Profile.objects.all(), desc="Обновление рейтингов профилей", unit="профиль"
-        ):
-            profile.update_rating()
+        answers = Answer.objects.all()
+        answers_to_update = []
+
+        for answer in answers:
+            new_rating = ratings_dict.get(answer.id, 0)
+            if answer.rating != new_rating:
+                answer.rating = new_rating
+                answers_to_update.append(answer)
+
+        if answers_to_update:
+            Answer.objects.bulk_update(answers_to_update, ["rating"])
+
+        question_ratings = (
+            QuestionLike.objects.select_related("question")
+            .values("question__author_id")
+            .annotate(total=Sum("value"))
+        )
+        q_ratings_dict = {item["question__author_id"]: item["total"] for item in question_ratings}
+
+        answer_ratings = (
+            AnswerLike.objects.select_related("answer")
+            .values("answer__author_id")
+            .annotate(total=Sum("value"))
+        )
+        a_ratings_dict = {item["answer__author_id"]: item["total"] for item in answer_ratings}
+
+        profiles = Profile.objects.all()
+        profiles_to_update = []
+
+        for profile in profiles:
+            user_id = profile.user_id
+            q_rating = q_ratings_dict.get(user_id, 0)
+            a_rating = a_ratings_dict.get(user_id, 0)
+            new_rating = q_rating + a_rating
+
+            if profile.rating != new_rating:
+                profile.rating = new_rating
+                profiles_to_update.append(profile)
+
+        if profiles_to_update:
+            Profile.objects.bulk_update(profiles_to_update, ["rating"])
+
+        # Вычисляем время выполнения
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
+        minutes = int(elapsed_time // 60)
+        seconds = elapsed_time % 60
 
         # Статистика
         self.stdout.write("\n" + "=" * 50)
@@ -316,4 +442,8 @@ class Command(BaseCommand):
         self.stdout.write(f"Ответы: {Answer.objects.count()}")
         self.stdout.write(f"Лайки на вопросы: {QuestionLike.objects.count()}")
         self.stdout.write(f"Лайки на ответы: {AnswerLike.objects.count()}")
+        if minutes > 0:
+            self.stdout.write(f"Время выполнения: {minutes} мин {seconds:.2f} сек")
+        else:
+            self.stdout.write(f"Время выполнения: {seconds:.2f} сек")
         self.stdout.write("=" * 50)

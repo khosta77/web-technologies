@@ -23,7 +23,7 @@ class UserRepository(IUserRepository):
     def get_user_by_id(self, user_id: int) -> User | None:
         """Получить пользователя по ID с оптимизацией запросов"""
         try:
-            return User.objects.select_related("profile").get(id=user_id)
+            return User.objects.select_related("profile", "profile__avatar").get(id=user_id)
         except User.DoesNotExist:
             return None
 
@@ -39,7 +39,7 @@ class UserRepository(IUserRepository):
         try:
             questions = (
                 Question.objects.filter(author_id=user_id)
-                .select_related("author", "author__profile")
+                .select_related("author", "author__profile", "author__profile__avatar")
                 .prefetch_related("tags")
             )
             return [self._question_to_dict(q) for q in questions]
@@ -50,7 +50,7 @@ class UserRepository(IUserRepository):
         """Получить ответы пользователя с оптимизацией запросов"""
         try:
             answers = Answer.objects.filter(author_id=user_id).select_related(
-                "author", "author__profile", "question"
+                "author", "author__profile", "author__profile__avatar", "question"
             )
             return [self._answer_to_dict(a) for a in answers]
         except User.DoesNotExist:
@@ -59,7 +59,7 @@ class UserRepository(IUserRepository):
     def get_best_members(self, limit: int = 5) -> list[dict[str, Any]]:
         """Получить лучших пользователей по рейтингу с оптимизацией запросов"""
         best_members = (
-            User.objects.select_related("profile")
+            User.objects.select_related("profile", "profile__avatar")
             .filter(profile__rating__gt=0)
             .order_by("-profile__rating")[:limit]
         )
@@ -80,6 +80,10 @@ class UserRepository(IUserRepository):
         if answers_count is None:
             answers_count = user.answers.count() if hasattr(user, "answers") else 0
 
+        avatar_name = "img/avatar.jpg"
+        if hasattr(user, "profile") and user.profile.avatar:
+            avatar_name = user.profile.avatar.file.name
+
         return {
             "id": user.id,
             "username": user.username,
@@ -87,7 +91,7 @@ class UserRepository(IUserRepository):
             "rating": rating,
             "questions_count": questions_count,
             "answers_count": answers_count,
-            "avatar": user.profile.avatar.name if hasattr(user, "profile") else "img/avatar.jpg",
+            "avatar": avatar_name,
         }
 
     @staticmethod

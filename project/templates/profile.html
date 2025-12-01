@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load dict_filters %}
 
 {% block title %}{{ profile_user.username }} - Profile - AskPupkin{% endblock %}
 
@@ -7,7 +8,7 @@
 <div class="profile-page">
     <div class="profile-header">
         {% if profile_user.profile and profile_user.profile.avatar %}
-        <img src="{{ profile_user.profile.avatar.url }}" alt="Avatar" class="profile-avatar">
+        <img src="{{ profile_user.profile.avatar.file.url }}" alt="Avatar" class="profile-avatar">
         {% else %}
         {% load static %}
         <img src="{% static 'img/avatar.jpg' %}" alt="Avatar" class="profile-avatar">
@@ -38,13 +39,20 @@
         <h2>Questions ({{ user_questions|length }})</h2>
         <div class="questions-list">
             {% for q in user_questions %}
-            <div class="question-item">
+            <div class="question-item" data-question-id="{{ q.id }}">
                 <div class="question-left-column">
                     <div class="question-voting">
                         <div class="voting-controls">
-                            <button class="vote-btn vote-down">-</button>
+                            {% if user.is_authenticated %}
+                            {% with question_like_value=user_question_likes|get_item:q.id %}
+                            <button class="vote-btn vote-down {% if question_like_value == -1 %}active vote-down-active{% endif %}">-</button>
                             <span class="vote-count">{{ q.rating }}</span>
-                            <button class="vote-btn vote-up">+</button>
+                            <button class="vote-btn vote-up {% if question_like_value == 1 %}active vote-up-active{% endif %}">+</button>
+                            {% endwith %}
+                            {% else %}
+                            <span class="vote-count">{{ q.rating }}</span>
+                            <a href="{% url 'login' %}?next={{ request.path }}" class="vote-btn vote-disabled" title="Войдите, чтобы голосовать">+/-</a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -70,13 +78,20 @@
         <h2>Answers ({{ user_answers|length }})</h2>
         <div class="answers-list">
             {% for answer in user_answers %}
-            <div class="answer-item">
+            <div class="answer-item" data-question-id="{{ answer.question.id }}" data-answer-id="{{ answer.id }}">
                 <div class="answer-left-column">
                     <div class="answer-voting">
                         <div class="voting-controls">
-                            <button class="vote-btn vote-down">-</button>
+                            {% if user.is_authenticated %}
+                            {% with answer_like_value=user_answer_likes|get_item:answer.id %}
+                            <button class="vote-btn vote-down {% if answer_like_value == -1 %}active vote-down-active{% endif %}">-</button>
                             <span class="vote-count">{{ answer.rating }}</span>
-                            <button class="vote-btn vote-up">+</button>
+                            <button class="vote-btn vote-up {% if answer_like_value == 1 %}active vote-up-active{% endif %}">+</button>
+                            {% endwith %}
+                            {% else %}
+                            <span class="vote-count">{{ answer.rating }}</span>
+                            <a href="{% url 'login' %}?next={{ request.path }}" class="vote-btn vote-disabled" title="Войдите, чтобы голосовать">+/-</a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

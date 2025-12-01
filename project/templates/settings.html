@@ -1,11 +1,26 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load dict_filters %}
 
 {% block title %}Settings: {{ user.username }} - AskPupkin{% endblock %}
 
 {% block content %}
 <div class="settings-page">
-    <h1>Settings: {{ user.username }}</h1>
+    {% if messages %}
+    <div class="error-messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    {% if form.non_field_errors %}
+    <div class="error-messages">
+        {% for error in form.non_field_errors %}
+        <div class="alert alert-error">{{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
     
     <form method="post" class="settings-form" enctype="multipart/form-data">
         {% csrf_token %}
@@ -14,14 +29,47 @@
             <h2>Profile Information</h2>
             
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" value="{{ user.username }}" class="form-control" required>
-                <small>Your unique username</small>
+                <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                <div class="error-message">{{ form.username.errors }}</div>
+                {% endif %}
             </div>
             
             <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" value="{{ user.email }}" class="form-control" required>
+                <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                <div class="error-message">{{ form.email.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.avatar.id_for_label }}">{{ form.avatar.label }}</label>
+                <div class="avatar-preview-container">
+                    <div class="avatar-preview-item">
+                        <p class="avatar-label">Current</p>
+                        {% if user.profile and user.profile.avatar %}
+                        <img src="{{ user.profile.avatar.file.url }}?v={{ user.profile.avatar.id }}" alt="Current avatar" class="avatar-preview-img">
+                        {% else %}
+                        <div class="avatar-placeholder">
+                            <span>No avatar</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="avatar-preview-item">
+                        <p class="avatar-label">New</p>
+                        <div id="new-avatar-preview" class="avatar-preview-placeholder clickable-avatar-preview">
+                            <span>Select file</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="file-input-wrapper" style="display: none;">
+                    {{ form.avatar }}
+                </div>
+                {% if form.avatar.errors %}
+                <div class="error-message">{{ form.avatar.errors }}</div>
+                {% endif %}
             </div>
         </div>
         
@@ -29,18 +77,30 @@
             <h2>Change Password</h2>
             
             <div class="form-group">
-                <label for="current_password">Current Password</label>
-                <input type="password" id="current_password" name="current_password" class="form-control" placeholder="Enter your current password">
+                <label for="{{ form.current_password.id_for_label }}">{{ form.current_password.label }}</label>
+                {{ form.current_password }}
+                {% if form.current_password.help_text %}
+                <small class="form-text text-muted">{{ form.current_password.help_text }}</small>
+                {% endif %}
+                {% if form.current_password.errors %}
+                <div class="error-message">{{ form.current_password.errors }}</div>
+                {% endif %}
             </div>
             
             <div class="form-group">
-                <label for="new_password">New Password</label>
-                <input type="password" id="new_password" name="new_password" class="form-control" placeholder="Enter new password">
+                <label for="{{ form.new_password.id_for_label }}">{{ form.new_password.label }}</label>
+                {{ form.new_password }}
+                {% if form.new_password.errors %}
+                <div class="error-message">{{ form.new_password.errors }}</div>
+                {% endif %}
             </div>
             
             <div class="form-group">
-                <label for="confirm_password">Confirm New Password</label>
-                <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Confirm new password">
+                <label for="{{ form.confirm_password.id_for_label }}">{{ form.confirm_password.label }}</label>
+                {{ form.confirm_password }}
+                {% if form.confirm_password.errors %}
+                <div class="error-message">{{ form.confirm_password.errors }}</div>
+                {% endif %}
             </div>
         </div>
         
@@ -49,6 +109,8 @@
             <button type="button" class="btn btn-secondary" onclick="window.location.reload()">Cancel</button>
         </div>
     </form>
+    
+    <script src="{% static 'js/settings.js' %}"></script>
     
     {% if user_questions or user_answers %}
     <div class="user-activity">
@@ -59,13 +121,19 @@
             <h3>Your Questions ({{ user_questions|length }})</h3>
             <div class="questions-list">
                 {% for q in user_questions %}
-                <div class="question-item">
+                <div class="question-item" data-question-id="{{ q.id }}">
                     <div class="question-left-column">
                         <div class="question-voting">
                             <div class="voting-controls">
-                                <button class="vote-btn vote-down">-</button>
+                                {% if user.is_authenticated %}
+                                {% with question_like_value=user_question_likes|get_item:q.id %}
+                                <button class="vote-btn vote-down {% if question_like_value == -1 %}active vote-down-active{% endif %}">-</button>
                                 <span class="vote-count">{{ q.rating }}</span>
-                                <button class="vote-btn vote-up">+</button>
+                                <button class="vote-btn vote-up {% if question_like_value == 1 %}active vote-up-active{% endif %}">+</button>
+                                {% endwith %}
+                                {% else %}
+                                <span class="vote-count">{{ q.rating }}</span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -86,13 +154,19 @@
             <h3>Your Answers ({{ user_answers|length }})</h3>
             <div class="answers-list">
                 {% for answer in user_answers %}
-                <div class="answer-item">
+                <div class="answer-item" data-question-id="{{ answer.question.id }}" data-answer-id="{{ answer.id }}">
                     <div class="answer-left-column">
                         <div class="answer-voting">
                             <div class="voting-controls">
-                                <button class="vote-btn vote-down">-</button>
+                                {% if user.is_authenticated %}
+                                {% with answer_like_value=user_answer_likes|get_item:answer.id %}
+                                <button class="vote-btn vote-down {% if answer_like_value == -1 %}active vote-down-active{% endif %}">-</button>
                                 <span class="vote-count">{{ answer.rating }}</span>
-                                <button class="vote-btn vote-up">+</button>
+                                <button class="vote-btn vote-up {% if answer_like_value == 1 %}active vote-up-active{% endif %}">+</button>
+                                {% endwith %}
+                                {% else %}
+                                <span class="vote-count">{{ answer.rating }}</span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

@@ -9,44 +9,66 @@
 <div class="auth-page">
     <h1>Registration</h1>
     
-    <div class="error-messages" style="display: none;">
-        <!-- Ошибки будут добавляться динамически через JavaScript -->
+    {% if messages %}
+    <div class="error-messages">
+        {% for message in messages %}
+        <p class="error-message">{{ message }}</p>
+        {% endfor %}
     </div>
+    {% endif %}
+    
+    {% if form.non_field_errors %}
+    <div class="error-messages">
+        {% for error in form.non_field_errors %}
+        <p class="error-message">{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
     
     <form method="post" class="auth-form" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="form-group">
-            <label for="login">Login</label>
-            <input type="text" id="login" name="login" value="dr_pepper" class="form-control" required>
+            <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+            {{ form.username }}
+            {% if form.username.errors %}
+            <div class="error-message server-error">{{ form.username.errors|first }}</div>
+            {% endif %}
         </div>
         
         <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" value="dr.pepper@mail.ru" class="form-control" required>
+            <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+            {{ form.email }}
+            {% if form.email.errors %}
+            <div class="error-message server-error">{{ form.email.errors|first }}</div>
+            {% endif %}
         </div>
         
         <div class="form-group">
-            <label for="nickname">NickName</label>
-            <input type="text" id="nickname" name="nickname" value="Dr. Pepper" class="form-control" required>
+            <label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
+            {{ form.password1 }}
+            {% if form.password1.errors %}
+            <div class="error-message server-error">{{ form.password1.errors|first }}</div>
+            {% endif %}
         </div>
         
         <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" class="form-control" required>
+            <label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
+            {{ form.password2 }}
+            {% if form.password2.errors %}
+            <div class="error-message server-error">{{ form.password2.errors|first }}</div>
+            {% endif %}
         </div>
         
         <div class="form-group">
-            <label for="repeat_password">Repeat password</label>
-            <input type="password" id="repeat_password" name="repeat_password" class="form-control" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="avatar">Upload avatar</label>
+            <label for="{{ form.avatar.id_for_label }}">{{ form.avatar.label }}</label>
             <div class="file-input-wrapper">
-                <input type="file" id="avatar" name="avatar" accept="image/*">
-                <label for="avatar" class="file-input-label">choose</label>
-                <span class="file-path">c:\avatar.jpg</span>
+                {{ form.avatar }}
+                <label for="{{ form.avatar.id_for_label }}" class="file-input-label">choose</label>
+                <span class="file-path"></span>
             </div>
+            {% if form.avatar.errors %}
+            <div class="error-message server-error">{{ form.avatar.errors|first }}</div>
+            {% endif %}
         </div>
         
         <div class="auth-button-row">
@@ -57,5 +79,5 @@
         </div>
     </form>
 </div>
-<script src="{% static 'js/validation.js' %}"></script>
+<script src="{% static 'js/signup-validation.js' %}"></script>
 {% endblock %}

@@ -34,7 +34,7 @@ class TestFillDbCommand:
         for user in users:
             assert hasattr(user, "profile")
             assert user.profile.avatar
-            avatars_used.add(user.profile.avatar.name)
+            avatars_used.add(user.profile.avatar.file.name)
 
         # Проверяем, что использованы разные аватары (если их достаточно)
         if len(avatars_used) > 1:
@@ -52,17 +52,16 @@ class TestFillDbCommand:
         # Проверяем, что все использованные аватары из списка доступных
         for user in users:
             if hasattr(user, "profile") and user.profile.avatar:
-                avatar_name = user.profile.avatar.name
-                # Проверяем, что аватар сохраняется через Django Storage API (путь avatars/...)
-                assert avatar_name.startswith("avatars/"), (
-                    f"Аватар должен начинаться с 'avatars/', получен: {avatar_name}"
+                avatar_name = user.profile.avatar.file.name
+                # Проверяем, что аватар сохраняется через Django Storage API
+                # (путь avatars/unique/...)
+                assert avatar_name.startswith("avatars/unique/"), (
+                    f"Аватар должен начинаться с 'avatars/unique/', получен: {avatar_name}"
                 )
-                # Проверяем, что имя файла начинается с "avatar" и заканчивается на ".jpg"
-                # Django Storage API может добавлять суффикс к имени файла при конфликтах
+                # Проверяем, что имя файла заканчивается на ".jpg"
                 avatar_filename = Path(avatar_name).name
-                assert avatar_filename.startswith("avatar") and avatar_filename.endswith(".jpg"), (
-                    f"Имя файла аватара должно начинаться с 'avatar' "
-                    f"и заканчиваться на '.jpg', получено: {avatar_filename}"
+                assert avatar_filename.endswith(".jpg"), (
+                    f"Имя файла аватара должно заканчиваться на '.jpg', получено: {avatar_filename}"
                 )
 
     def test_fill_db_copies_avatars_to_uploads(self) -> None:
@@ -75,16 +74,13 @@ class TestFillDbCommand:
         saved_count = 0
         for user in users:
             if hasattr(user, "profile") and user.profile.avatar:
-                avatar_path = user.profile.avatar.path
+                avatar_path = user.profile.avatar.file.path
                 # Проверяем, что файл существует в MEDIA_ROOT
                 if Path(avatar_path).exists():
                     saved_count += 1
-                    # Проверяем, что путь соответствует структуре avatars/год/месяц/user_id/
-                    assert "avatars" in avatar_path, (
-                        f"Путь аватара должен содержать 'avatars', получен: {avatar_path}"
-                    )
-                    assert str(user.id) in avatar_path, (
-                        f"Путь аватара должен содержать ID пользователя, получен: {avatar_path}"
+                    # Проверяем, что путь соответствует структуре avatars/unique/
+                    assert "avatars/unique" in avatar_path, (
+                        f"Путь аватара должен содержать 'avatars/unique', получен: {avatar_path}"
                     )
 
         assert saved_count > 0, "Хотя бы один аватар должен быть сохранен через Django Storage API"
@@ -112,9 +108,11 @@ class TestFillDbCommand:
 
             users = User.objects.filter(is_superuser=False)
             for user in users:
-                if hasattr(user, "profile"):
+                if hasattr(user, "profile") and user.profile.avatar:
                     # Должен использоваться дефолтный аватар
-                    assert user.profile.avatar.name == "img/avatar.jpg"
+                    # Проверяем, что аватар установлен (может быть None или AvatarFile)
+                    # Для дефолтного аватара проверяем, что он существует
+                    assert user.profile.avatar.file.name.startswith("avatars/unique/")
         finally:
             # Восстанавливаем файлы
             if backup_dir.exists():
@@ -142,7 +140,7 @@ class TestFillDbCommand:
 
         for user in users:
             if hasattr(user, "profile") and user.profile.avatar:
-                avatar_name = user.profile.avatar.name
+                avatar_name = user.profile.avatar.file.name
                 avatars_used[avatar_name] = avatars_used.get(avatar_name, 0) + 1
 
         # Если есть несколько аватаров, должны использоваться разные

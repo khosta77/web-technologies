@@ -9,24 +9,33 @@
 <div class="auth-page">
     <h1>Log In</h1>
     
-        {% if messages %}
-        <div class="error-messages">
-            {% for message in messages %}
-            <p class="error-message">{{ message }}</p>
-            {% endfor %}
-        </div>
-        {% endif %}
+    {% if messages %}
+    <div class="error-messages">
+        {% for message in messages %}
+        <p class="error-message">{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
     
     <form method="post" class="auth-form" action="{% url 'login' %}">
         {% csrf_token %}
+        {% if next %}
+        <input type="hidden" name="next" value="{{ next }}">
+        {% endif %}
         <div class="form-group">
-            <label for="login">Login</label>
-            <input type="text" id="login" name="username" placeholder="Enter your login here" class="form-control" required>
+            <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+            {{ form.username }}
+            {% if form.username.errors %}
+            <div class="error-message">{{ form.username.errors }}</div>
+            {% endif %}
         </div>
         
         <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" class="form-control" required>
+            <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+            {{ form.password }}
+            {% if form.password.errors %}
+            <div class="error-message">{{ form.password.errors }}</div>
+            {% endif %}
         </div>
         
         <div class="auth-button-row">
@@ -37,5 +46,4 @@
         </div>
     </form>
 </div>
-<script src="{% static 'js/login-validation.js' %}"></script>
 {% endblock %}
