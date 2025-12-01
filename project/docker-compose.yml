@@ -10,7 +10,6 @@ services:
     ports:
       - "${DOCKER_DB_PORT:-5433}:5432"
     volumes:
-      # Постоянное хранилище данных БД
       - postgres_data:/var/lib/postgresql/data
     networks:
       - askpupkin_network
