@@ -324,13 +324,13 @@ def settings(request: HttpRequest) -> HttpResponse:
 
     questions = (
         Question.objects.filter(author=request.user)
-        .select_related("author", "author__profile")
+        .select_related("author", "author__profile", "author__profile__avatar")
         .prefetch_related("tags")
         .order_by("-created_at")
     )
     answers = (
         Answer.objects.filter(author=request.user)
-        .select_related("author", "author__profile", "question")
+        .select_related("author", "author__profile", "author__profile__avatar", "question")
         .order_by("-created_at")
     )
 
@@ -376,13 +376,13 @@ def profile(request: HttpRequest, user_id: int) -> HttpResponse:
 
     user_questions = (
         Question.objects.filter(author=profile_user)
-        .select_related("author", "author__profile")
+        .select_related("author", "author__profile", "author__profile__avatar")
         .prefetch_related("tags")
         .order_by("-created_at")
     )
     user_answers = (
         Answer.objects.filter(author=profile_user)
-        .select_related("author", "author__profile", "question")
+        .select_related("author", "author__profile", "author__profile__avatar", "question")
         .order_by("-created_at")
     )
 

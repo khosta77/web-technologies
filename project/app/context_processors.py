@@ -25,7 +25,7 @@ def user_context(request: HttpRequest) -> dict[str, Any]:
         best_members = []
     else:
         best_members = list(
-            User.objects.select_related("profile")
+            User.objects.select_related("profile", "profile__avatar")
             .filter(profile__isnull=False)
             .order_by("-profile__rating", "-id")[:5]
         )
