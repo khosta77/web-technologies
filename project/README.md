@@ -123,13 +123,31 @@ project/
 
 ### С Poetry
 
-```bash
-cd project
-poetry install
-poetry run python manage.py runserver 8000
-```
+1. **Настройка переменных окружения (опционально):**
 
-* В браузере: `http://localhost:8000/`
+   ```bash
+   cd project
+   cp .env.example .env
+   # Отредактируйте .env при необходимости
+   ```
+
+2. **Запуск базы данных:**
+
+   ```bash
+   make up-database
+   ```
+
+3. **Выполнение миграций и запуск сервера:**
+
+   ```bash
+   poetry install
+   poetry run python manage.py migrate
+   poetry run python manage.py runserver 8000
+   ```
+
+   * В браузере: `http://localhost:8000/`
+
+**Подробные инструкции по работе с БД см. в [PROJECTS.md](PROJECTS.md)**
 
 ## Установка зависимостей
 
