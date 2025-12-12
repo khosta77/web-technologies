@@ -406,11 +406,6 @@ def logout_view(request: HttpRequest) -> HttpResponse:
     return redirect(referer if referer else "index")
 
 
-def custom_404_view(request: HttpRequest, exception: Exception | None = None) -> HttpResponse:
-    """Кастомная страница 404"""
-    return render(request, "404.html", {}, status=404)
-
-
 @login_required(login_url="/login/")
 @require_http_methods(["POST"])
 def like_question(request: HttpRequest) -> JsonResponse:
