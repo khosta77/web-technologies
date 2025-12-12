@@ -17,7 +17,7 @@ class QuestionRepository(IQuestionRepository):
         """Получить все вопросы (новые)"""
         return (
             Question.objects.new()
-            .select_related("author", "author__profile", "author__profile__avatar")
+            .select_related("author__profile__avatar")
             .prefetch_related("tags")
             .annotate(answers_count=Count("answers"))
         )
@@ -26,7 +26,7 @@ class QuestionRepository(IQuestionRepository):
         """Получить популярные вопросы"""
         return (
             Question.objects.hot()
-            .select_related("author", "author__profile", "author__profile__avatar")
+            .select_related("author__profile__avatar")
             .prefetch_related("tags")
             .annotate(answers_count=Count("answers"))
         )
@@ -35,7 +35,7 @@ class QuestionRepository(IQuestionRepository):
         """Получить вопросы по тегу"""
         return (
             Question.objects.by_tag(tag_name)
-            .select_related("author", "author__profile", "author__profile__avatar")
+            .select_related("author__profile__avatar")
             .prefetch_related("tags")
             .annotate(answers_count=Count("answers"))
         )
@@ -44,9 +44,7 @@ class QuestionRepository(IQuestionRepository):
         """Получить вопрос по ID"""
         try:
             question = (
-                Question.objects.select_related(
-                    "author", "author__profile", "author__profile__avatar"
-                )
+                Question.objects.select_related("author__profile__avatar")
                 .prefetch_related("tags")
                 .get(id=question_id)
             )

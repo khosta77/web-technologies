@@ -17,6 +17,6 @@ class AnswerRepository(IAnswerRepository):
         """Получить все ответы на вопрос с оптимизацией запросов"""
         return (
             Answer.objects.filter(question_id=question_id)
-            .select_related("author", "author__profile", "author__profile__avatar", "question")
+            .select_related("author__profile__avatar", "question")
             .order_by("-rating", "-created_at")
         )

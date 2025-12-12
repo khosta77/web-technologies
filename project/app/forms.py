@@ -244,6 +244,195 @@ class AddAnswerForm(forms.Form):
     )
 
 
+class LikeQuestionForm(forms.Form):
+    """Форма для лайка/дизлайка вопроса"""
+
+    question_id = forms.IntegerField()
+    value = forms.IntegerField()
+
+    def __init__(self, *args: object, user: User | None = None, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_value(self) -> int:
+        """Валидация значения лайка"""
+        value: int = self.cleaned_data.get("value", 0)
+        if value not in [-1, 1]:
+            raise ValidationError("Значение должно быть -1 или 1")
+        return value
+
+    def clean_question_id(self) -> int:
+        """Валидация существования вопроса"""
+        question_id: int = self.cleaned_data.get("question_id", 0)
+        from app.models import Question
+
+        try:
+            Question.objects.get(id=question_id)
+        except Question.DoesNotExist as e:
+            raise ValidationError("Вопрос не найден") from e
+        return question_id
+
+    def save(self) -> dict[str, Any]:
+        """Обработка лайка/дизлайка"""
+        if not self.user or not self.user.is_authenticated:
+            raise ValueError("Пользователь не авторизован")
+
+        from app.models import Question, QuestionLike
+
+        question_id = self.cleaned_data["question_id"]
+        value = self.cleaned_data["value"]
+
+        question_obj = Question.objects.get(id=question_id)
+
+        # Получаем или создаем лайк
+        like, created = QuestionLike.objects.get_or_create(
+            user=self.user,
+            question=question_obj,
+            defaults={"value": value},
+        )
+
+        # Если лайк уже существовал, обновляем значение
+        if not created:
+            if like.value == value:
+                # Удаляем лайк если тот же
+                like.delete()
+                question_obj.refresh_from_db()
+                return {"rating": question_obj.rating, "removed": True}
+            else:
+                # Обновляем значение
+                like.value = value
+                like.save()
+
+        question_obj.refresh_from_db()
+        return {"rating": question_obj.rating, "removed": False}
+
+
+class LikeAnswerForm(forms.Form):
+    """Форма для лайка/дизлайка ответа"""
+
+    answer_id = forms.IntegerField()
+    value = forms.IntegerField()
+
+    def __init__(self, *args: object, user: User | None = None, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_value(self) -> int:
+        """Валидация значения лайка"""
+        value: int = self.cleaned_data.get("value", 0)
+        if value not in [-1, 1]:
+            raise ValidationError("Значение должно быть -1 или 1")
+        return value
+
+    def clean_answer_id(self) -> int:
+        """Валидация существования ответа"""
+        answer_id: int = self.cleaned_data.get("answer_id", 0)
+        from app.models import Answer
+
+        try:
+            Answer.objects.get(id=answer_id)
+        except Answer.DoesNotExist as e:
+            raise ValidationError("Ответ не найден") from e
+        return answer_id
+
+    def save(self) -> dict[str, Any]:
+        """Обработка лайка/дизлайка ответа"""
+        if not self.user or not self.user.is_authenticated:
+            raise ValueError("Пользователь не авторизован")
+
+        from app.models import Answer, AnswerLike
+
+        answer_id = self.cleaned_data["answer_id"]
+        value = self.cleaned_data["value"]
+
+        answer_obj = Answer.objects.get(id=answer_id)
+
+        like, created = AnswerLike.objects.get_or_create(
+            user=self.user,
+            answer=answer_obj,
+            defaults={"value": value},
+        )
+
+        if not created:
+            if like.value == value:
+                like.delete()
+                answer_obj.refresh_from_db()
+                return {"rating": answer_obj.rating, "removed": True}
+            else:
+                like.value = value
+                like.save()
+
+        answer_obj.refresh_from_db()
+        return {"rating": answer_obj.rating, "removed": False}
+
+
+class MarkCorrectAnswerForm(forms.Form):
+    """Форма для отметки правильного ответа"""
+
+    question_id = forms.IntegerField()
+    answer_id = forms.IntegerField()
+    is_correct = forms.BooleanField(required=False)
+
+    def __init__(self, *args: object, user: User | None = None, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean(self) -> dict[str, object]:
+        """Валидация формы"""
+        cleaned_data = super().clean()
+        question_id = cleaned_data.get("question_id")
+        answer_id = cleaned_data.get("answer_id")
+
+        if not question_id or not answer_id:
+            return cleaned_data  # type: ignore[no-any-return]
+
+        from app.models import Answer, Question
+
+        try:
+            question_obj = Question.objects.get(id=question_id)
+        except Question.DoesNotExist as e:
+            raise ValidationError({"question_id": "Вопрос не найден"}) from e
+
+        # Проверка авторства
+        if self.user and question_obj.author != self.user:
+            raise ValidationError(
+                {"question_id": "Только автор вопроса может отметить правильный ответ"}
+            )
+
+        try:
+            Answer.objects.get(id=answer_id, question=question_obj)
+        except Answer.DoesNotExist as e:
+            raise ValidationError(
+                {"answer_id": "Ответ не найден или не принадлежит этому вопросу"}
+            ) from e
+
+        return cleaned_data  # type: ignore[no-any-return]
+
+    def save(self) -> dict[str, Any]:
+        """Обработка отметки правильного ответа"""
+        from app.models import Answer, Question
+
+        question_id = self.cleaned_data["question_id"]
+        answer_id = self.cleaned_data["answer_id"]
+        is_correct = self.cleaned_data.get("is_correct", False)
+
+        question_obj = Question.objects.get(id=question_id)
+        answer_obj = Answer.objects.get(id=answer_id, question=question_obj)
+
+        if is_correct:
+            # Сбрасываем все другие ответы
+            Answer.objects.filter(question=question_obj).exclude(id=answer_id).update(
+                is_correct=False
+            )
+            answer_obj.is_correct = True
+            answer_obj.save(update_fields=["is_correct"])
+            return {"success": True, "is_correct": True}
+        else:
+            answer_obj.is_correct = False
+            answer_obj.save(update_fields=["is_correct"])
+            return {"success": True, "is_correct": False}
+
+
 class EditProfileForm(forms.ModelForm):
     """Форма редактирования профиля"""
 
@@ -351,3 +540,36 @@ class EditProfileForm(forms.ModelForm):
                 raise ValidationError({"current_password": "Неверный текущий пароль"})
 
         return cleaned_data
+
+    def save(self, commit: bool = True) -> User:
+        """Переопределяем save для обработки аватара и пароля"""
+        user = super().save(commit=False)
+
+        # Обновляем пароль, если указан
+        new_password = self.cleaned_data.get("new_password")
+        if new_password:
+            user.set_password(new_password)
+
+        if commit:
+            user.save()
+
+            # Обрабатываем аватар из cleaned_data или из request.FILES
+            avatar = self.cleaned_data.get("avatar")
+            if not avatar and hasattr(self, "files") and "avatar" in self.files:
+                avatar = self.files["avatar"]
+
+            if avatar:
+                # Получаем или создаем профиль
+                from app.avatar_utils import get_or_create_avatar_file
+                from app.models import Profile
+
+                profile, _created = Profile.objects.get_or_create(user=user, defaults={"rating": 0})
+                try:
+                    avatar_file = get_or_create_avatar_file(avatar)
+                    profile.avatar = avatar_file
+                    profile.save(update_fields=["avatar"])
+                except Exception as e:
+                    # Добавляем ошибку в форму
+                    self.add_error("avatar", f"Ошибка при загрузке аватара: {e}")
+
+        return user

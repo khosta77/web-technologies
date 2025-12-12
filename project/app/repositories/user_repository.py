@@ -39,7 +39,7 @@ class UserRepository(IUserRepository):
         try:
             questions = (
                 Question.objects.filter(author_id=user_id)
-                .select_related("author", "author__profile", "author__profile__avatar")
+                .select_related("author__profile__avatar")
                 .prefetch_related("tags")
             )
             return [self._question_to_dict(q) for q in questions]
@@ -50,7 +50,7 @@ class UserRepository(IUserRepository):
         """Получить ответы пользователя с оптимизацией запросов"""
         try:
             answers = Answer.objects.filter(author_id=user_id).select_related(
-                "author", "author__profile", "author__profile__avatar", "question"
+                "author__profile__avatar", "question"
             )
             return [self._answer_to_dict(a) for a in answers]
         except User.DoesNotExist:
