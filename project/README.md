@@ -123,18 +123,16 @@ project/
 
 ### С Poetry
 
-1. **Настройка переменных окружения (опционально):**
+1. **Настройка переменных окружения для БД (один раз):**
 
    ```bash
-   cd project
-   cp .env.example .env
-   # Отредактируйте .env при необходимости
+   cp ../database/.env.example ../database/.env
    ```
 
 2. **Запуск базы данных:**
 
    ```bash
-   make up-database
+   make -C ../database up-database
    ```
 
 3. **Выполнение миграций и запуск сервера:**
