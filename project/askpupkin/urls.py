@@ -15,9 +15,13 @@ def favicon_view(request):
     """Обработчик для favicon.ico - возвращает пустой ответ"""
     return HttpResponse(status=204)  # No Content
 
-# Поддержка media файлов в режиме разработки (добавляем ПЕРВЫМИ)
+# Поддержка статических и media файлов в режиме разработки (добавляем ПЕРВЫМИ)
 urlpatterns = []
 if settings.DEBUG:
+    # Статические файлы (CSS, JS, изображения) - используем django.contrib.staticfiles
+    from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+    urlpatterns += staticfiles_urlpatterns()
+    # Media файлы (загруженные пользователями)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     # Django Debug Toolbar
     if "debug_toolbar" in settings.INSTALLED_APPS:
