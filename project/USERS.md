@@ -60,7 +60,7 @@ poetry run python manage.py changepassword <username>
 Чтобы получить список всех пользователей в базе данных:
 
 ```bash
-poetry run python manage.py shell -c "from django.contrib.auth.models import User; [print(f'{u.id}: {u.username}') for u in User.objects.all()]"
+poetry run python manage.py list_users
 ```
 
 ## Создание суперпользователя для доступа к админ-панели

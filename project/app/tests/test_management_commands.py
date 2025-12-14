@@ -80,3 +80,93 @@ class GetUserInfoCommandTestCase(TestCase):
 
         assert "Вопросов: 1" in output
         assert "Ответов: 1" in output
+
+
+class ListUsersCommandTestCase(TestCase):
+    """Тесты для команды list_users"""
+
+    def test_list_users_empty(self):
+        """Тест: команда обрабатывает пустую базу данных"""
+        out = StringIO()
+        call_command("list_users", stdout=out)
+        output = out.getvalue()
+
+        assert "В базе данных нет пользователей" in output
+
+    def test_list_users_single_user(self):
+        """Тест: команда выводит одного пользователя"""
+        user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass123"
+        )
+
+        out = StringIO()
+        call_command("list_users", stdout=out)
+        output = out.getvalue()
+
+        assert "СПИСОК ПОЛЬЗОВАТЕЛЕЙ" in output
+        assert f"{user.id}: {user.username}" in output
+        assert "Всего пользователей: 1" in output
+
+    def test_list_users_multiple_users(self):
+        """Тест: команда выводит нескольких пользователей"""
+        user1 = User.objects.create_user(
+            username="user1", email="user1@example.com", password="testpass123"
+        )
+        user2 = User.objects.create_user(
+            username="user2", email="user2@example.com", password="testpass123"
+        )
+        user3 = User.objects.create_user(
+            username="user3", email="user3@example.com", password="testpass123"
+        )
+
+        out = StringIO()
+        call_command("list_users", stdout=out)
+        output = out.getvalue()
+
+        assert "СПИСОК ПОЛЬЗОВАТЕЛЕЙ" in output
+        assert f"{user1.id}: {user1.username}" in output
+        assert f"{user2.id}: {user2.username}" in output
+        assert f"{user3.id}: {user3.username}" in output
+        assert "Всего пользователей: 3" in output
+
+    def test_list_users_ordered_by_id(self):
+        """Тест: команда выводит пользователей отсортированных по ID"""
+        user2 = User.objects.create_user(
+            username="user2", email="user2@example.com", password="testpass123"
+        )
+        user1 = User.objects.create_user(
+            username="user1", email="user1@example.com", password="testpass123"
+        )
+        user3 = User.objects.create_user(
+            username="user3", email="user3@example.com", password="testpass123"
+        )
+
+        out = StringIO()
+        call_command("list_users", stdout=out)
+        output = out.getvalue()
+
+        # Проверяем, что все пользователи присутствуют в выводе
+        assert f"{user1.id}: {user1.username}" in output
+        assert f"{user2.id}: {user2.username}" in output
+        assert f"{user3.id}: {user3.username}" in output
+
+        # Проверяем, что пользователи отсортированы по ID
+        lines = output.split("\n")
+        user_lines = [
+            line
+            for line in lines
+            if ":" in line
+            and line.strip()
+            and "СПИСОК" not in line
+            and "Всего" not in line
+            and "=" not in line
+        ]
+
+        # Должны быть в порядке возрастания ID
+        ids = []
+        for line in user_lines:
+            if ":" in line:
+                user_id = int(line.split(":")[0].strip())
+                ids.append(user_id)
+
+        assert ids == sorted(ids), "Пользователи должны быть отсортированы по ID"
