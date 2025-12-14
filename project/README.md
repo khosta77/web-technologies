@@ -65,13 +65,26 @@ project/
 │   │   ├── dropdown.js        # Выпадающее меню пользователя
 │   │   ├── votes.js           # AJAX обработка лайков и отметки правильного ответа
 │   │   └── settings.js         # Обработка формы настроек (превью аватара)
-│   └── img/
-│       ├── avatar.jpg
-│       ├── logo.png
-│       └── search.jpg
+│   ├── img/
+│   │   ├── avatar.jpg
+│   │   ├── logo.png
+│   │   └── search.jpg
+│   └── sample.html         # Тестовый файл для проверки статики (ДЗ6)
 ├── uploads/                # Файлы, загруженные пользователями
 │   └── avatars/
 │       └── unique/         # Уникальные аватары (дедупликация по хешу)
+├── gunicorn.conf.py        # Конфигурация Gunicorn (2 воркера)
+├── simple_wsgi.py          # Простой WSGI скрипт без Django
+├── nginx/                  # Конфигурация Nginx
+│   └── askpupkin.conf      # Конфигурация Nginx (<50 строк)
+├── scripts/                # Скрипты для ДЗ6
+│   ├── start_gunicorn.sh   # Запуск Gunicorn для Django
+│   ├── start_simple_wsgi.sh # Запуск простого WSGI (порт 8081)
+│   ├── test_nginx.sh       # Проверка конфигурации Nginx
+│   ├── setup_nginx_paths.sh # Автоматическая настройка путей
+│   ├── benchmark.sh        # Нагрузочное тестирование
+│   └── verify_setup.sh     # Проверка всех компонентов
+├── performance_report.md   # Отчет о производительности (ДЗ6)
 ├── db.sqlite3              # База данных
 ├── manage.py
 └── README.md
@@ -237,6 +250,78 @@ poetry run poe ci
 - **Dependency Management:** Poetry
 - **Testing:** pytest, pytest-django
 - **Code Quality:** ruff, mypy, flake8, bandit, vulture
+
+## Домашнее задание 6: Настройка веб-серверов
+
+### Быстрый старт
+
+1. **Проверка настройки:**
+   ```bash
+   ./scripts/verify_setup.sh
+   ```
+
+2. **Запуск Gunicorn для Django:**
+   ```bash
+   ./scripts/start_gunicorn.sh
+   # Приложение доступно: http://127.0.0.1:8000
+   ```
+
+3. **Запуск простого WSGI (опционально):**
+   ```bash
+   ./scripts/start_simple_wsgi.sh
+   # Приложение доступно: http://localhost:8081
+   # Проверка: http://localhost:8081?param1=value1&param2=value2
+   ```
+
+4. **Запуск Nginx:**
+   ```bash
+   ./scripts/test_nginx.sh  # Проверка конфигурации
+   sudo nginx -c $(pwd)/nginx/askpupkin.conf  # Запуск
+   # Проверка: http://localhost/sample.html
+   ```
+
+5. **Нагрузочное тестирование:**
+   ```bash
+   ./scripts/benchmark.sh
+   # Результаты в benchmark_results/
+   ```
+
+### Конфигурация
+
+**Gunicorn** (`gunicorn.conf.py`):
+- Workers: 2
+- Bind: 127.0.0.1:8000
+- WSGI app: askpupkin.wsgi:application
+
+**Nginx** (`nginx/askpupkin.conf`):
+- Размер: 46 строк
+- Upstream для Gunicorn
+- Proxy cache настроен
+- Статика: `/uploads/` и файлы по расширениям
+- Сжатие (gzip)
+- Кэширование браузера
+
+**Простой WSGI** (`simple_wsgi.py`):
+- Работает без Django
+- Выводит GET и POST параметры
+- Порт: 8081
+
+### Нагрузочное тестирование
+
+Скрипт `benchmark.sh` выполняет 5 тестов:
+1. Статический документ через Nginx
+2. Статический документ через Gunicorn
+3. Динамический документ через Gunicorn
+4. Динамический документ через Nginx (без кэша)
+5. Динамический документ через Nginx (с кэшем)
+
+Результаты сохраняются в `benchmark_results/`. Заполните `performance_report.md` результатами тестирования.
+
+### Требования
+
+- Gunicorn (установлен через `poetry add gunicorn`)
+- Nginx (установите отдельно: `brew install nginx` или `sudo apt-get install nginx`)
+- Apache Benchmark (для тестирования: `brew install httpd` или `sudo apt-get install apache2-utils`)
 
 ---
 
