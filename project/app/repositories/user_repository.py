@@ -9,12 +9,11 @@ from typing import Any
 from django.contrib.auth import authenticate as django_authenticate
 from django.contrib.auth.models import User
 
-from app.interfaces import IUserRepository
 from app.models import Answer, Question
 
 
-class UserRepository(IUserRepository):
-    """Реализация интерфейса IUserRepository с использованием Django ORM"""
+class UserRepository:
+    """Репозиторий для работы с пользователями через Django ORM"""
 
     def authenticate(self, username: str, password: str) -> User | None:
         """Аутентифицировать пользователя"""

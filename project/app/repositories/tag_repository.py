@@ -8,12 +8,11 @@ from typing import Any
 
 from django.db.models import QuerySet
 
-from app.interfaces import ITagRepository
 from app.models import Tag
 
 
-class TagRepository(ITagRepository):
-    """Реализация интерфейса ITagRepository с использованием Django ORM"""
+class TagRepository:
+    """Репозиторий для работы с тегами через Django ORM"""
 
     def get_all_tags(self) -> QuerySet:
         """Получить все теги"""

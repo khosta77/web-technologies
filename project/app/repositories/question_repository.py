@@ -6,12 +6,11 @@ from __future__ import annotations
 
 from django.db.models import Count, QuerySet
 
-from app.interfaces import IQuestionRepository
 from app.models import Question
 
 
-class QuestionRepository(IQuestionRepository):
-    """Реализация интерфейса IQuestionRepository с использованием Django ORM"""
+class QuestionRepository:
+    """Репозиторий для работы с вопросами через Django ORM"""
 
     def get_all_questions(self) -> QuerySet:
         """Получить все вопросы (новые)"""
