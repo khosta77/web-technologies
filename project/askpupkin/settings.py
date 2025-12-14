@@ -132,3 +132,11 @@ if DEBUG:
         "127.0.0.1",
         "localhost",
     ]
+    
+    # Скрываем toolbar всегда
+    def show_toolbar(request):
+        return False
+    
+    DEBUG_TOOLBAR_CONFIG = {
+        "SHOW_TOOLBAR_CALLBACK": show_toolbar,
+    }
