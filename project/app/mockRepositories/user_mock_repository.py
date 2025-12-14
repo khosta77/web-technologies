@@ -2,8 +2,6 @@
 Mock репозиторий для работы с пользователями
 """
 
-from app.interfaces import IUserRepository
-
 from .mock_users import (
     MOCK_USERS,
     authenticate_user,
@@ -14,8 +12,8 @@ from .mock_users import (
 )
 
 
-class UserMockRepository(IUserRepository):
-    """Реализация интерфейса IUserRepository с mock данными"""
+class UserMockRepository:
+    """Mock репозиторий для работы с пользователями (используется в тестах)"""
 
     def authenticate(self, username, password):
         """Аутентифицировать пользователя"""

@@ -4,9 +4,6 @@ Views для приложения AskPupkin
 
 from __future__ import annotations
 
-import contextlib
-import traceback
-
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -18,7 +15,16 @@ from django.views.decorators.http import require_http_methods
 
 from .avatar_utils import get_default_avatar_file, get_or_create_avatar_file
 from .constants import ANSWERS_PER_PAGE, QUESTIONS_PER_PAGE
-from .forms import AddAnswerForm, AskQuestionForm, EditProfileForm, LoginForm, SignupForm
+from .forms import (
+    AddAnswerForm,
+    AskQuestionForm,
+    EditProfileForm,
+    LikeAnswerForm,
+    LikeQuestionForm,
+    LoginForm,
+    MarkCorrectAnswerForm,
+    SignupForm,
+)
 from .models import Answer, AnswerLike, Profile, Question, QuestionLike, Tag
 from .repositories import (
     AnswerRepository,
@@ -111,8 +117,9 @@ def question(request: HttpRequest, question_id: int) -> HttpResponse:
     user_question_like = None
     user_answer_likes = {}
     if request.user.is_authenticated:
-        with contextlib.suppress(QuestionLike.DoesNotExist):
-            user_question_like = QuestionLike.objects.get(user=request.user, question=question_obj)
+        user_question_like = QuestionLike.objects.filter(
+            user=request.user, question=question_obj
+        ).first()
 
         # Получаем лайки для всех ответов на странице
         answer_ids = [answer.id for answer in page]
@@ -266,44 +273,19 @@ def ask(request: HttpRequest) -> HttpResponse:
 def settings(request: HttpRequest) -> HttpResponse:
     """Страница настроек профиля"""
     if request.method == "POST":
-        has_avatar_file = "avatar" in request.FILES
-
         form = EditProfileForm(
             request.POST, request.FILES, instance=request.user, user=request.user
         )
 
         if form.is_valid():
-            # Сохраняем изменения username и email через форму
-            user = form.save(commit=False)
-            # Обновляем пароль, если указан
-            new_password = form.cleaned_data.get("new_password")
-            if new_password:
-                user.set_password(new_password)
-            user.save()
+            # Сохраняем изменения через форму (включая пароль и аватар)
+            form.save()
 
-            # Обновляем аватар, если загружен
-            # Проверяем как через cleaned_data, так и через request.FILES
-            avatar = form.cleaned_data.get("avatar")
-            if not avatar and has_avatar_file:
-                # Если файл есть в request.FILES, но не в cleaned_data, берем из request.FILES
-                avatar = request.FILES.get("avatar")
-
-            if avatar:
-                # Получаем или создаем профиль
-                profile, _created = Profile.objects.get_or_create(user=user, defaults={"rating": 0})
-                try:
-                    avatar_file = get_or_create_avatar_file(avatar)
-                    profile.avatar = avatar_file
-                    profile.save(update_fields=["avatar"])
-                except Exception as e:
-                    error_msg = f"Ошибка при загрузке аватара: {e!s}"
-                    messages.error(request, error_msg)
-                    # Логируем полную ошибку для отладки
-                    print(f"Avatar upload error: {traceback.format_exc()}")
-            elif has_avatar_file:
-                messages.warning(
-                    request, "Файл был выбран, но не был обработан. Попробуйте еще раз."
-                )
+            # Проверяем, были ли ошибки при сохранении аватара
+            if form.errors:
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"{field}: {error}")
             else:
                 messages.success(request, "Профиль успешно обновлён")
             return redirect("settings")
@@ -312,25 +294,18 @@ def settings(request: HttpRequest) -> HttpResponse:
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"{field}: {error}")
-            # Также проверяем, есть ли файл в request.FILES, даже если форма не валидна
-            if has_avatar_file:
-                messages.warning(
-                    request,
-                    "Файл был выбран, но форма не прошла валидацию. "
-                    "Проверьте другие поля и попробуйте снова.",
-                )
     else:
         form = EditProfileForm(instance=request.user, user=request.user)
 
     questions = (
         Question.objects.filter(author=request.user)
-        .select_related("author", "author__profile", "author__profile__avatar")
+        .select_related("author__profile__avatar")
         .prefetch_related("tags")
         .order_by("-created_at")
     )
     answers = (
         Answer.objects.filter(author=request.user)
-        .select_related("author", "author__profile", "author__profile__avatar", "question")
+        .select_related("author__profile__avatar", "question")
         .order_by("-created_at")
     )
 
@@ -376,13 +351,13 @@ def profile(request: HttpRequest, user_id: int) -> HttpResponse:
 
     user_questions = (
         Question.objects.filter(author=profile_user)
-        .select_related("author", "author__profile", "author__profile__avatar")
+        .select_related("author__profile__avatar")
         .prefetch_related("tags")
         .order_by("-created_at")
     )
     user_answers = (
         Answer.objects.filter(author=profile_user)
-        .select_related("author", "author__profile", "author__profile__avatar", "question")
+        .select_related("author__profile__avatar", "question")
         .order_by("-created_at")
     )
 
@@ -431,131 +406,61 @@ def logout_view(request: HttpRequest) -> HttpResponse:
     return redirect(referer if referer else "index")
 
 
-def custom_404_view(request: HttpRequest, exception: Exception | None = None) -> HttpResponse:
-    """Кастомная страница 404"""
-    return render(request, "404.html", {}, status=404)
-
-
 @login_required(login_url="/login/")
 @require_http_methods(["POST"])
 def like_question(request: HttpRequest) -> JsonResponse:
     """AJAX обработчик для лайка/дизлайка вопроса"""
-    try:
-        question_id = int(request.POST.get("question_id", 0))
-        value = int(request.POST.get("value", 0))
-    except (ValueError, TypeError):
-        return JsonResponse({"error": "Неверные параметры запроса"}, status=400)
+    form = LikeQuestionForm(request.POST, user=request.user)
 
-    if value not in [-1, 1]:
-        return JsonResponse({"error": "Значение должно быть -1 или 1"}, status=400)
+    if not form.is_valid():
+        errors = form.errors.as_json()
+        return JsonResponse({"error": errors}, status=400)
 
     try:
-        question_obj = Question.objects.get(id=question_id)
-    except Question.DoesNotExist:
-        return JsonResponse({"error": "Вопрос не найден"}, status=404)
-
-    # Получаем или создаем лайк
-    like, created = QuestionLike.objects.get_or_create(
-        user=request.user,
-        question=question_obj,
-        defaults={"value": value},
-    )
-
-    # Если лайк уже существовал, обновляем значение
-    if not created:
-        # Если пользователь пытается поставить тот же лайк, удаляем его
-        if like.value == value:
-            like.delete()
-            question_obj.refresh_from_db()
-            return JsonResponse({"rating": question_obj.rating, "removed": True})
-        # Иначе обновляем значение
-        like.value = value
-        like.save()
-
-    question_obj.refresh_from_db()
-    return JsonResponse({"rating": question_obj.rating, "removed": False})
+        result = form.save()
+        return JsonResponse(result)
+    except ValueError as e:
+        return JsonResponse({"error": str(e)}, status=403)
 
 
 @login_required(login_url="/login/")
 @require_http_methods(["POST"])
 def like_answer(request: HttpRequest) -> JsonResponse:
     """AJAX обработчик для лайка/дизлайка ответа"""
-    try:
-        answer_id = int(request.POST.get("answer_id", 0))
-        value = int(request.POST.get("value", 0))
-    except (ValueError, TypeError):
-        return JsonResponse({"error": "Неверные параметры запроса"}, status=400)
+    form = LikeAnswerForm(request.POST, user=request.user)
 
-    if value not in [-1, 1]:
-        return JsonResponse({"error": "Значение должно быть -1 или 1"}, status=400)
+    if not form.is_valid():
+        errors = form.errors.as_json()
+        return JsonResponse({"error": errors}, status=400)
 
     try:
-        answer_obj = Answer.objects.get(id=answer_id)
-    except Answer.DoesNotExist:
-        return JsonResponse({"error": "Ответ не найден"}, status=404)
-
-    # Получаем или создаем лайк
-    like, created = AnswerLike.objects.get_or_create(
-        user=request.user,
-        answer=answer_obj,
-        defaults={"value": value},
-    )
-
-    # Если лайк уже существовал, обновляем значение
-    if not created:
-        # Если пользователь пытается поставить тот же лайк, удаляем его
-        if like.value == value:
-            like.delete()
-            answer_obj.refresh_from_db()
-            return JsonResponse({"rating": answer_obj.rating, "removed": True})
-        # Иначе обновляем значение
-        like.value = value
-        like.save()
-
-    answer_obj.refresh_from_db()
-    return JsonResponse({"rating": answer_obj.rating, "removed": False})
+        result = form.save()
+        return JsonResponse(result)
+    except ValueError as e:
+        return JsonResponse({"error": str(e)}, status=403)
 
 
 @login_required(login_url="/login/")
 @require_http_methods(["POST"])
 def mark_correct_answer(request: HttpRequest) -> JsonResponse:
     """AJAX обработчик для отметки правильного ответа"""
-    try:
-        question_id = int(request.POST.get("question_id", 0))
-        answer_id = int(request.POST.get("answer_id", 0))
-    except (ValueError, TypeError):
-        return JsonResponse({"error": "Неверные параметры запроса"}, status=400)
+    # Парсим is_correct из POST
+    is_correct_value = request.POST.get("is_correct", "false").lower() == "true"
+
+    form = MarkCorrectAnswerForm(
+        {
+            **request.POST.dict(),
+            "is_correct": is_correct_value,
+        },
+        user=request.user,
+    )
+
+    if not form.is_valid():
+        errors = form.errors.as_json()
+        return JsonResponse({"error": errors}, status=400)
 
     try:
-        question_obj = Question.objects.get(id=question_id)
-    except Question.DoesNotExist:
-        return JsonResponse({"error": "Вопрос не найден"}, status=404)
-
-    # Проверка авторства вопроса
-    if question_obj.author != request.user:
-        return JsonResponse(
-            {"error": "Только автор вопроса может отметить правильный ответ"}, status=403
-        )
-
-    try:
-        answer_obj = Answer.objects.get(id=answer_id, question=question_obj)
-    except Answer.DoesNotExist:
-        return JsonResponse(
-            {"error": "Ответ не найден или не принадлежит этому вопросу"}, status=404
-        )
-
-    # Получаем значение чекбокса
-    is_correct = request.POST.get("is_correct", "false").lower() == "true"
-
-    if is_correct:
-        # Сбрасываем все другие ответы на этот вопрос
-        Answer.objects.filter(question=question_obj).exclude(id=answer_id).update(is_correct=False)
-        # Устанавливаем текущий ответ как правильный
-        answer_obj.is_correct = True
-        answer_obj.save(update_fields=["is_correct"])
-        return JsonResponse({"success": True, "is_correct": True})
-    else:
-        # Снимаем отметку
-        answer_obj.is_correct = False
-        answer_obj.save(update_fields=["is_correct"])
-        return JsonResponse({"success": True, "is_correct": False})
+        result = form.save()
+        return JsonResponse(result)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

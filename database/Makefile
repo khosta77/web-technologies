@@ -1,7 +1,6 @@
-.PHONY: help up-database down-database stop-database restart-database logs-database status-database shell-database clean-database connect disconnect
-
-# Определение команды docker-compose (автоматически)
 DOCKER_COMPOSE := docker compose
+
+.PHONY: help up-database down-database stop-database restart-database logs-database status-database shell-database clean-database connect disconnect
 
 help: ## Показать справку по командам
 	@echo "Доступные команды для работы с базой данных:"
@@ -63,7 +62,9 @@ status-database: ## Показать статус контейнера
 	@$(DOCKER_COMPOSE) ps postgres
 
 shell-database: ## Подключиться к PostgreSQL через psql
-	@$(DOCKER_COMPOSE) exec postgres psql -U postgres -d askpupkin
+	@DB_USER=$$(grep "^DB_USER=" .env 2>/dev/null | cut -d '=' -f2- || echo "postgres"); \
+	DB_NAME=$$(grep "^DB_NAME=" .env 2>/dev/null | cut -d '=' -f2- || echo "askpupkin"); \
+	$(DOCKER_COMPOSE) exec postgres psql -U $$DB_USER -d $$DB_NAME
 
 clean-database: ## Удалить контейнер и все данные (ОПАСНО!)
 	@echo "ВНИМАНИЕ: Это удалит все данные в базе!"
@@ -125,4 +126,3 @@ disconnect: ## Удалить переменные окружения БД из 
 		sed -i '/^DOCKER_DB_PORT=/d; /^DB_NAME=/d; /^DB_USER=/d; /^DB_PASSWORD=/d; /^DB_HOST=/d; /^DB_PORT=/d' .env; \
 	fi; \
 	echo "Переменные БД удалены из .env"
-

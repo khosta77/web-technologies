@@ -94,10 +94,6 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.WARNING("Используйте команду для получения списка пользователей:")
             )
-            shell_command = (
-                '  python manage.py shell -c "from django.contrib.auth.models import User; '
-                "[print(f'{u.id}: {u.username}') for u in User.objects.all()]\""
-            )
-            self.stdout.write(shell_command)
+            self.stdout.write("  python manage.py list_users")
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Ошибка: {e}"))

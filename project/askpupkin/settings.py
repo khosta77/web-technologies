@@ -8,15 +8,22 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Загрузка переменных окружения из .env файла
-env_file = BASE_DIR / ".env"
-if env_file.exists():
+# Загрузка переменных окружения из .env файла (первым делом ищем рядом с проектом,
+# затем пробуем общий файл в ../database/.env)
+env_file_candidates = [
+    BASE_DIR / ".env",
+    BASE_DIR.parent / "database" / ".env",
+]
+for env_file in env_file_candidates:
+    if not env_file.exists():
+        continue
     with open(env_file) as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
                 key, value = line.split("=", 1)
                 os.environ.setdefault(key.strip(), value.strip())
+    break
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-demo-key-for-askpupkin-project"

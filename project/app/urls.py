@@ -1,4 +1,4 @@
-from django.urls import path, re_path
+from django.urls import path
 
 from . import views
 
@@ -19,6 +19,4 @@ urlpatterns = [
     path("api/like/question/", views.like_question, name="like_question"),
     path("api/like/answer/", views.like_answer, name="like_answer"),
     path("api/mark-correct/", views.mark_correct_answer, name="mark_correct_answer"),
-    # Catch-all для всех несуществующих URL (исключаем /media/ и /static/)
-    re_path(r"^(?!media/|static/).*$", views.custom_404_view),
 ]

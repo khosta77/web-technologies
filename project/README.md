@@ -7,17 +7,9 @@ Django-приложение для вопросов и ответов по ан�
 ```
 project/
 ├── app/                      # Django приложение
-│   ├── interfaces/          # Интерфейсы (абстракции)
-│   │   ├── question_interface.py
-│   │   ├── answer_interface.py
-│   │   ├── tag_interface.py
-│   │   └── user_interface.py
 │   ├── mockRepositories/    # Mock репозитории (заглушки для тестов)
-│   │   ├── question_mock_repository.py
-│   │   ├── answer_mock_repository.py
-│   │   ├── tag_mock_repository.py
 │   │   ├── user_mock_repository.py
-│   │   └── mock_data_frames.py    # Данные-заглушки
+│   │   └── mock_users.py    # Mock данные для пользователей
 │   ├── repositories/        # Репозитории Django ORM
 │   │   ├── question_repository.py
 │   │   ├── answer_repository.py
@@ -87,28 +79,17 @@ project/
 
 ## Архитектура
 
-### Интерфейсы (app/interfaces/)
-Абстрактные классы для работы с данными:
-- `IQuestionRepository` - интерфейс для работы с вопросами
-- `IAnswerRepository` - интерфейс для работы с ответами  
-- `ITagRepository` - интерфейс для работы с тегами
-
 ### Mock репозитории (app/mockRepositories/)
-Реализация интерфейсов с заглушками для тестирования (используются в тестах):
-- `QuestionMockRepository` - вопросы с данными из `mock_data_frames.py`
-- `AnswerMockRepository` - ответы
-- `TagMockRepository` - теги
-- `UserMockRepository` - пользователи
-- `mock_data_frames.py` - реалистичные данные для тестирования
+Mock репозитории для тестирования:
+- `UserMockRepository` - mock репозиторий для пользователей (используется в тестах)
+- `mock_users.py` - mock данные для пользователей
 
 ### Репозитории (app/repositories/)
-Реализация интерфейсов с использованием Django ORM (используются в views и основном коде):
+Репозитории для работы с данными через Django ORM (используются в views и основном коде):
 - `QuestionRepository` - вопросы через Django ORM
 - `AnswerRepository` - ответы через Django ORM
 - `TagRepository` - теги через Django ORM
 - `UserRepository` - пользователи через Django ORM
-
-Все views используют репозитории через интерфейсы, что обеспечивает абстракцию от конкретной реализации (Django ORM или mock-данные).
 
 ### Django модели (app/models.py)
 Модели данных для работы с БД:
@@ -123,18 +104,16 @@ project/
 
 ### С Poetry
 
-1. **Настройка переменных окружения (опционально):**
+1. **Настройка переменных окружения для БД (один раз):**
 
    ```bash
-   cd project
-   cp .env.example .env
-   # Отредактируйте .env при необходимости
+   cp ../database/.env.example ../database/.env
    ```
 
 2. **Запуск базы данных:**
 
    ```bash
-   make up-database
+   make -C ../database up-database
    ```
 
 3. **Выполнение миграций и запуск сервера:**

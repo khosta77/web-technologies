@@ -83,24 +83,51 @@ def get_user_by_id(user_id):
 
 def get_user_questions(user_id):
     """Получить вопросы пользователя"""
-    # Импортируем локально чтобы избежать циклических зависимостей
-    from app.mockRepositories.mock_data_frames import NEW_QUESTIONS
-
-    # Возвращаем первые 5 вопросов как пример
-    questions = NEW_QUESTIONS[:5].copy()
-    for q in questions:
-        q["author_id"] = user_id
-        q["author"] = "you"
-    return questions
+    # Возвращаем простые заглушки вопросов
+    return [
+        {
+            "id": 1,
+            "title": "Sample Question 1",
+            "text": "This is a sample question",
+            "author_id": user_id,
+            "author": "you",
+            "rating": 5,
+            "answers_count": 2,
+            "tags": ["python"],
+        },
+        {
+            "id": 2,
+            "title": "Sample Question 2",
+            "text": "Another sample question",
+            "author_id": user_id,
+            "author": "you",
+            "rating": 3,
+            "answers_count": 1,
+            "tags": ["django"],
+        },
+    ]
 
 
 def get_user_answers(user_id):
     """Получить ответы пользователя"""
-    # Возвращаем примеры ответов
-    from app.mockRepositories.mock_data_frames import SAMPLE_ANSWERS
-
-    answers = SAMPLE_ANSWERS.copy()
-    for a in answers:
-        a["author_id"] = user_id
-        a["author"] = "you"
-    return answers
+    # Возвращаем простые заглушки ответов
+    return [
+        {
+            "id": 1,
+            "text": "This is a sample answer",
+            "author_id": user_id,
+            "author": "you",
+            "question_id": 1,
+            "rating": 2,
+            "is_correct": False,
+        },
+        {
+            "id": 2,
+            "text": "Another sample answer",
+            "author_id": user_id,
+            "author": "you",
+            "question_id": 2,
+            "rating": 1,
+            "is_correct": True,
+        },
+    ]

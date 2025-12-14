@@ -782,7 +782,12 @@
         display: flex;
         flex-direction: row;
         align-items: center;
+        justify-content: center;
         gap: 5px;
+    }
+    
+    .question-voting .voting-controls {
+        justify-content: center;
     }
     
     .question-meta {
@@ -836,6 +841,11 @@
     .question-voting {
         gap: 4px;
         flex-direction: row;
+        justify-content: center;
+    }
+    
+    .question-voting .voting-controls {
+        justify-content: center;
     }
     
     .question-right-column {
@@ -872,6 +882,11 @@
     .question-voting {
         gap: 3px;
         flex-direction: row;
+        justify-content: center;
+    }
+    
+    .question-voting .voting-controls {
+        justify-content: center;
     }
     
     .question-right-column {
@@ -908,6 +923,11 @@
     
     .question-page .question-voting {
         gap: 3px;
+        justify-content: center;
+    }
+    
+    .question-page .question-voting .voting-controls {
+        justify-content: center;
     }
     
     .question-page .question-right-column {
@@ -941,6 +961,11 @@
     
     .answer-voting {
         gap: 3px;
+        justify-content: center;
+    }
+    
+    .answer-voting .voting-controls {
+        justify-content: center;
     }
     
     .answer-right-column {
@@ -978,6 +1003,14 @@
         height: 45px;
     }
     
+    .question-page .question-voting {
+        justify-content: center;
+    }
+    
+    .question-page .question-voting .voting-controls {
+        justify-content: center;
+    }
+    
     .question-page .question-title {
         font-size: 16px;
     }
@@ -1001,6 +1034,14 @@
     .answer-avatar {
         width: 45px;
         height: 45px;
+    }
+    
+    .answer-voting {
+        justify-content: center;
+    }
+    
+    .answer-voting .voting-controls {
+        justify-content: center;
     }
     
     .answers-section h2 {
@@ -1030,6 +1071,14 @@
         height: 40px;
     }
     
+    .question-page .question-voting {
+        justify-content: center;
+    }
+    
+    .question-page .question-voting .voting-controls {
+        justify-content: center;
+    }
+    
     .question-page .question-title {
         font-size: 14px;
     }
@@ -1053,6 +1102,14 @@
     .answer-avatar {
         width: 40px;
         height: 40px;
+    }
+    
+    .answer-voting {
+        justify-content: center;
+    }
+    
+    .answer-voting .voting-controls {
+        justify-content: center;
     }
 }
 
