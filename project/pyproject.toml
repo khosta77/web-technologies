@@ -38,6 +38,8 @@ pytest-mock = "^3.15.0"
 syrupy = "^4.9.1"
 faker = "^37.12.0"
 django-debug-toolbar = "^4.4.0"
+coverage = {extras = ["toml"], version = "^7.13.0"}
+pytest-cov = "^5.0.0"
 
 [tool.mypy]
 python_version = "3.13"
@@ -135,6 +137,38 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "--tb=short -v"
 
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+    "*/__pycache__/*",
+    "*/mockRepositories/*",
+    "*/manage.py",
+    "*/settings.py",
+    "*/wsgi.py",
+    "*/asgi.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+precision = 2
+show_missing = true
+skip_covered = false
+
+[tool.coverage.html]
+directory = "htmlcov"
+
 [tool.poe.tasks]
 poetry-check = "poetry check"
 ruff = "ruff check app/"
@@ -145,7 +179,12 @@ mypy = "mypy"
 bandit = "bandit -c pyproject.toml -r app/ -ll"
 flake8 = "flake8 app/"
 pytest = "pytest app/tests/ -v"
-ci.sequence = ["poetry-check", "ruff", "ruff-format", "flake8", "mypy", "bandit", "pytest"]
+coverage = "coverage run -m pytest app/tests/ -v"
+coverage-report = "coverage report"
+coverage-html = "coverage html"
+coverage-xml = "coverage xml"
+coverage-check = "coverage report --fail-under=70"
+ci.sequence = ["poetry-check", "ruff", "ruff-format", "flake8", "mypy", "bandit", "coverage", "coverage-report"]
 check.sequence = ["poetry-check", "ruff", "ruff-format", "flake8", "mypy", "bandit", "pytest"]
 
 [build-system]

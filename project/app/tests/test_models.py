@@ -247,22 +247,20 @@ class LikeModelTestCase(TestCase):
 
     def test_question_like_unique_together(self):
         """Тест уникальности пары user-question для QuestionLike"""
+        from django.db import IntegrityError
+
         QuestionLike.objects.create(user=self.user, question=self.question, value=1)
 
         # Попытка создать дубликат должна вызвать ошибку
-        try:
+        with self.assertRaises(IntegrityError):
             QuestionLike.objects.create(user=self.user, question=self.question, value=-1)
-            raise AssertionError("Should raise IntegrityError")
-        except Exception:
-            pass  # Ожидаем ошибку уникальности
 
     def test_answer_like_unique_together(self):
         """Тест уникальности пары user-answer для AnswerLike"""
+        from django.db import IntegrityError
+
         AnswerLike.objects.create(user=self.user, answer=self.answer, value=1)
 
         # Попытка создать дубликат должна вызвать ошибку
-        try:
+        with self.assertRaises(IntegrityError):
             AnswerLike.objects.create(user=self.user, answer=self.answer, value=-1)
-            raise AssertionError("Should raise IntegrityError")
-        except Exception:
-            pass  # Ожидаем ошибку уникальности

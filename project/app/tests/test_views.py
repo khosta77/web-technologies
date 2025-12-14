@@ -215,3 +215,127 @@ class ViewsTestCase(TestCase):
         content = response.content.decode()
         assert "Test Question" in content
         assert "Django Question" not in content
+
+    def test_like_question_ajax_success(self):
+        """Тест: AJAX лайк вопроса успешен"""
+        self.client.post("/login/", {"username": "testuser", "password": "testpass123"})
+
+        response = self.client.post(
+            "/api/like/question/", {"question_id": self.question.id, "value": 1}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "rating" in data
+        assert "removed" in data
+
+    def test_like_question_ajax_requires_login(self):
+        """Тест: AJAX лайк вопроса требует логина"""
+        response = self.client.post(
+            "/api/like/question/", {"question_id": self.question.id, "value": 1}
+        )
+
+        # Должен быть редирект на логин
+        assert response.status_code == 302
+
+    def test_like_question_ajax_invalid_data(self):
+        """Тест: AJAX лайк вопроса с невалидными данными"""
+        self.client.post("/login/", {"username": "testuser", "password": "testpass123"})
+
+        response = self.client.post(
+            "/api/like/question/", {"question_id": self.question.id, "value": 2}
+        )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert "error" in data
+
+    def test_like_answer_ajax_success(self):
+        """Тест: AJAX лайк ответа успешен"""
+        answer = Answer.objects.create(text="Test answer", author=self.user, question=self.question)
+        self.client.post("/login/", {"username": "testuser", "password": "testpass123"})
+
+        response = self.client.post("/api/like/answer/", {"answer_id": answer.id, "value": 1})
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "rating" in data
+        assert "removed" in data
+
+    def test_like_answer_ajax_requires_login(self):
+        """Тест: AJAX лайк ответа требует логина"""
+        answer = Answer.objects.create(text="Test answer", author=self.user, question=self.question)
+
+        response = self.client.post("/api/like/answer/", {"answer_id": answer.id, "value": 1})
+
+        # Должен быть редирект на логин
+        assert response.status_code == 302
+
+    def test_like_answer_ajax_requires_post(self):
+        """Тест: AJAX лайк ответа требует POST"""
+        answer = Answer.objects.create(text="Test answer", author=self.user, question=self.question)
+        self.client.post("/login/", {"username": "testuser", "password": "testpass123"})
+
+        response = self.client.get("/api/like/answer/", {"answer_id": answer.id, "value": 1})
+
+        # Должен вернуть 405 Method Not Allowed
+        assert response.status_code == 405
+
+    def test_mark_correct_answer_ajax_success(self):
+        """Тест: AJAX отметка правильного ответа успешна"""
+        answer = Answer.objects.create(text="Test answer", author=self.user, question=self.question)
+        self.client.post("/login/", {"username": "testuser", "password": "testpass123"})
+
+        response = self.client.post(
+            "/api/mark-correct/",
+            {
+                "question_id": self.question.id,
+                "answer_id": answer.id,
+                "is_correct": "true",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "success" in data
+        assert data["success"] is True
+        assert data["is_correct"] is True
+
+    def test_mark_correct_answer_ajax_requires_login(self):
+        """Тест: AJAX отметка правильного ответа требует логина"""
+        answer = Answer.objects.create(text="Test answer", author=self.user, question=self.question)
+
+        response = self.client.post(
+            "/api/mark-correct/",
+            {
+                "question_id": self.question.id,
+                "answer_id": answer.id,
+                "is_correct": "true",
+            },
+        )
+
+        # Должен быть редирект на логин
+        assert response.status_code == 302
+
+    def test_mark_correct_answer_ajax_wrong_author(self):
+        """Тест: AJAX отметка правильного ответа неавтором вопроса"""
+        other_user = User.objects.create_user(
+            username="otheruser", email="other@example.com", password="testpass123"
+        )
+        answer = Answer.objects.create(
+            text="Test answer", author=other_user, question=self.question
+        )
+        self.client.post("/login/", {"username": "otheruser", "password": "testpass123"})
+
+        response = self.client.post(
+            "/api/mark-correct/",
+            {
+                "question_id": self.question.id,
+                "answer_id": answer.id,
+                "is_correct": "true",
+            },
+        )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert "error" in data
